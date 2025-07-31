@@ -1,6 +1,12 @@
 # Environment variables
 .env
 
+# Data directory with extracted emails
+data/
+
+# Real spam examples (may contain sensitive data)
+spam.json
+
 # Python-generated files
 __pycache__/
 *.py[cod]

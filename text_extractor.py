@@ -3,7 +3,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from bs4 import BeautifulSoup
 import logging
-from typing import str
 
 class TextExtractor:
     @staticmethod
@@ -26,7 +25,7 @@ class TextExtractor:
                         if payload:
                             html_content = payload.decode('utf-8', errors='ignore')
                             soup = BeautifulSoup(html_content, 'html.parser')
-                            text_content += soup.get_text() + "\n"
+                            text_content += soup.get_text(separator=' ', strip=True) + "\n"
             else:
                 content_type = email_message.get_content_type()
                 payload = email_message.get_payload(decode=True)
@@ -37,7 +36,7 @@ class TextExtractor:
                     elif content_type == "text/html":
                         html_content = payload.decode('utf-8', errors='ignore')
                         soup = BeautifulSoup(html_content, 'html.parser')
-                        text_content = soup.get_text()
+                        text_content = soup.get_text(separator=' ', strip=True)
             
             text_content = text_content.strip()
             logging.debug(f"Extracted text length: {len(text_content)} characters")

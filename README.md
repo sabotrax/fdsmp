@@ -6,10 +6,10 @@ Ein automatischer Spam-Filter, der IMAP-E-Mails mit einem lokalen LLM (Ollama) a
 
 - Holt die neuesten 3 E-Mails per IMAP
 - Extrahiert Text aus HTML- und Plain-Text-E-Mails
-- Verwendet LangChain Few-Shot Templates für Spam-Erkennung
+- Verwendet LangChain Few-Shot Templates fï¿½r Spam-Erkennung
 - Klassifiziert E-Mails mit lokalem Ollama LLM
 - Verschiebt Spam automatisch in den Spam-Ordner
-- Cron-kompatibel für regelmäßige Ausführung
+- Cron-kompatibel fï¿½r regelmï¿½ï¿½ige Ausfï¿½hrung
 
 ## Setup
 
@@ -39,7 +39,7 @@ nano .env
 uv sync
 ```
 
-### 4. Test-Ausführung
+### 4. Test-Ausfï¿½hrung
 
 ```bash
 uv run main.py
@@ -47,27 +47,49 @@ uv run main.py
 
 ## Cron Setup
 
-Für automatische Ausführung alle 10 Minuten:
+Fï¿½r automatische Ausfï¿½hrung alle 10 Minuten:
 
 ```bash
 # Crontab bearbeiten
 crontab -e
 
-# Diese Zeile hinzufügen (Pfad anpassen):
+# Diese Zeile hinzufï¿½gen (Pfad anpassen):
 */10 * * * * cd /pfad/zu/mailficker && uv run main.py >> /var/log/fdsmp.log 2>&1
 ```
 
 ## Konfiguration (.env)
 
 - `IMAP_SERVER`: IMAP Server (z.B. imap.gmail.com)
-- `IMAP_PORT`: IMAP Port (meist 993 für SSL)
+- `IMAP_PORT`: IMAP Port (meist 993 fï¿½r SSL)
 - `IMAP_USERNAME`: E-Mail Adresse
 - `IMAP_PASSWORD`: Passwort oder App-Passwort
 - `INBOX_FOLDER`: Posteingang Ordner (meist INBOX)
 - `SPAM_FOLDER`: Spam Ordner (meist SPAM oder Junk)
 - `OLLAMA_BASE_URL`: Ollama Server URL (http://localhost:11434)
 - `OLLAMA_MODEL`: LLM Model (z.B. llama3.1)
+- `SPAM_EXAMPLES_FILE`: JSON-Datei mit Few-Shot Examples (Standard: spam_examples.json)
 - `MAX_EMAILS_TO_PROCESS`: Anzahl E-Mails pro Durchlauf (Standard: 3)
+
+## Spam-Klassifikation anpassen
+
+Die Few-Shot Examples fï¿½r die Spam-Erkennung kï¿½nnen in der `spam_examples.json` Datei angepasst werden:
+
+```json
+{
+  "examples": [
+    {
+      "email": "Subject: ...\nFrom: ...\nContent: ...",
+      "classification": "spam"
+    },
+    {
+      "email": "Subject: ...\nFrom: ...\nContent: ...",
+      "classification": "not spam"
+    }
+  ]
+}
+```
+
+Je mehr relevante Examples hinzugefï¿½gt werden, desto besser kann das LLM zwischen Spam und echten E-Mails unterscheiden.
 
 ## Logs
 
