@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from langchain_ollama import OllamaLLM
 from langchain.prompts import FewShotPromptTemplate, PromptTemplate
 from dotenv import load_dotenv
@@ -8,15 +9,26 @@ import logging
 load_dotenv()
 
 class SpamClassifier:
-    def __init__(self):
+    def __init__(self, debug=False):
+        self.debug = debug
+        
+        # Enable LangChain debugging only in debug mode
+        if debug:
+            logging.getLogger("langchain").setLevel(logging.DEBUG)
+            logging.getLogger("langchain_ollama").setLevel(logging.DEBUG)
+        
         self.ollama_base_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
         self.model_name = os.getenv('OLLAMA_MODEL', 'llama3.1')
         self.examples_file = os.getenv('SPAM_EXAMPLES_FILE', 'spam_examples.json')
         
         self.llm = OllamaLLM(
             base_url=self.ollama_base_url,
-            model=self.model_name
+            model=self.model_name,
+            temperature=0.2,
+            num_ctx=8192,
+            system="You are a spam classifier. Only respond with 'spam' or 'not spam'. No explanations."
         )
+        
         
         self.spam_examples = self._load_examples()
         self._setup_prompts()
@@ -87,7 +99,20 @@ class SpamClassifier:
         try:
             formatted_prompt = self.prompt.format(email=email_text)
             
+            if self.debug:
+                logging.info("Starting email classification...")
+                logging.info(f"Email text length: {len(email_text)} characters")
+                logging.info(f"Formatted prompt length: {len(formatted_prompt)} characters")
+                logging.info("Sending request to LLM...")
+                start_time = time.time()
+                
             response = self.llm.invoke(formatted_prompt)
+            
+            if self.debug:
+                end_time = time.time()
+                processing_time = end_time - start_time
+                logging.info(f"LLM processing time: {processing_time:.2f} seconds")
+                logging.info(f"Received LLM response: '{response[:100]}...'")
             
             classification = response.strip().lower()
             

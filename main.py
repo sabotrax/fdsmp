@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import logging
 import sys
 from email_client import EmailClient
@@ -17,12 +18,22 @@ def setup_logging():
     )
 
 def main():
+    parser = argparse.ArgumentParser(description='fdsmp - automated spam filter')
+    parser.add_argument('--dry-run', action='store_true', 
+                       help='Classify emails but do not move them to spam folder')
+    parser.add_argument('--debug', action='store_true',
+                       help='Enable debug logging for LLM classification')
+    args = parser.parse_args()
+    
     setup_logging()
-    logging.info("Starting fdsmp - spam filter")
+    if args.dry_run:
+        logging.info("Starting fdsmp - spam filter (DRY RUN MODE)")
+    else:
+        logging.info("Starting fdsmp - spam filter")
     
     email_client = EmailClient()
     text_extractor = TextExtractor()
-    spam_classifier = SpamClassifier()
+    spam_classifier = SpamClassifier(debug=args.debug)
     
     try:
         if not email_client.connect():
@@ -37,18 +48,24 @@ def main():
         spam_count = 0
         for email_data in emails:
             try:
-                logging.info(f"Processing email: {email_data['subject'][:50]}...")
+                logging.info(f"Processing email:")
+                logging.info(f"  From: {email_data['from']}")
+                logging.info(f"  Subject: {email_data['subject'][:50]}{'...' if len(email_data['subject']) > 50 else ''}")
                 
                 email_text = text_extractor.prepare_email_for_analysis(email_data)
                 
                 classification = spam_classifier.classify_email(email_text)
                 
                 if classification == "spam":
-                    if email_client.move_to_spam(email_data['id']):
+                    if args.dry_run:
+                        logging.info(f"[DRY RUN] Would move spam email: {email_data['subject'][:50]}")
                         spam_count += 1
-                        logging.info(f"Moved spam email to spam folder: {email_data['subject'][:50]}")
                     else:
-                        logging.error(f"Failed to move spam email: {email_data['subject'][:50]}")
+                        if email_client.move_to_spam(email_data['id']):
+                            spam_count += 1
+                            logging.info(f"Moved spam email to spam folder: {email_data['subject'][:50]}")
+                        else:
+                            logging.error(f"Failed to move spam email: {email_data['subject'][:50]}")
                 else:
                     logging.info(f"Email is not spam: {email_data['subject'][:50]}")
                     
@@ -58,7 +75,10 @@ def main():
                 logging.error(f"FATAL: Error processing email {email_data.get('subject', 'Unknown')}: {e}")
                 raise SystemExit(f"FATAL: Email processing failed: {e}")
         
-        logging.info(f"Processing complete. {spam_count} emails moved to spam folder.")
+        if args.dry_run:
+            logging.info(f"Processing complete. {spam_count} emails classified as spam (not moved).")
+        else:
+            logging.info(f"Processing complete. {spam_count} emails moved to spam folder.")
         
     except Exception as e:
         logging.error(f"Fatal error: {e}")
