@@ -9,8 +9,9 @@ import logging
 load_dotenv()
 
 class SpamClassifier:
-    def __init__(self, debug=False):
+    def __init__(self, debug=False, debug_prompt=False):
         self.debug = debug
+        self.debug_prompt = debug_prompt
         
         # Enable LangChain debugging only in debug mode
         if debug:
@@ -20,13 +21,13 @@ class SpamClassifier:
         self.ollama_base_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
         self.model_name = os.getenv('OLLAMA_MODEL', 'llama3.1')
         self.examples_file = os.getenv('SPAM_EXAMPLES_FILE', 'spam_examples.json')
+        self.temperature = float(os.getenv('LLM_TEMPERATURE', '0.2'))
         
         self.llm = OllamaLLM(
             base_url=self.ollama_base_url,
             model=self.model_name,
-            temperature=0.2,
-            num_ctx=8192,
-            system="You are a spam classifier. Only respond with 'spam' or 'not spam'. No explanations."
+            temperature=self.temperature,
+            num_ctx=8192
         )
         
         
@@ -90,23 +91,25 @@ class SpamClassifier:
         self.prompt = FewShotPromptTemplate(
             examples=self.spam_examples,
             example_prompt=self.example_template,
-            prefix="You are an expert email spam classifier. Based on the following examples, classify emails as 'spam' or 'not spam'. Look for indicators like suspicious URLs, urgent language, requests for personal information, get-rich-quick schemes, and phishing attempts.\n\nExamples:",
+            prefix="Classify as 'spam' or 'not spam' based on these examples:",
             suffix="Email:\n{email}\n\nClassification:",
             input_variables=["email"]
         )
     
     def classify_email(self, email_text: str) -> str:
         try:
-            formatted_prompt = self.prompt.format(email=email_text)
-            
             if self.debug:
                 logging.info("Starting email classification...")
                 logging.info(f"Email text length: {len(email_text)} characters")
-                logging.info(f"Formatted prompt length: {len(formatted_prompt)} characters")
-                logging.info("Sending request to LLM...")
                 start_time = time.time()
                 
-            response = self.llm.invoke(formatted_prompt)
+            if self.debug_prompt:
+                formatted_prompt = self.prompt.format(email=email_text)
+                logging.info(f"Formatted prompt length: {len(formatted_prompt)} characters")
+                logging.info(f"Full prompt:\n{formatted_prompt}")
+                
+            # Use LangChain LLM with FewShotPromptTemplate
+            response = self.llm.invoke(self.prompt.format(email=email_text))
             
             if self.debug:
                 end_time = time.time()

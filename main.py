@@ -23,7 +23,20 @@ def main():
                        help='Classify emails but do not move them to spam folder')
     parser.add_argument('--debug', action='store_true',
                        help='Enable debug logging for LLM classification')
+    parser.add_argument('--debug-prompt', action='store_true',
+                       help='Show full prompt sent to LLM (implies --debug)')
+    parser.add_argument('--emails', type=int, metavar='N',
+                       help='Number of emails to process (overrides .env MAX_EMAILS_TO_PROCESS)')
     args = parser.parse_args()
+    
+    # --debug-prompt implies --debug
+    if args.debug_prompt:
+        args.debug = True
+    
+    # Override MAX_EMAILS_TO_PROCESS if --emails is specified
+    if args.emails:
+        import os
+        os.environ['MAX_EMAILS_TO_PROCESS'] = str(args.emails)
     
     setup_logging()
     if args.dry_run:
@@ -33,7 +46,7 @@ def main():
     
     email_client = EmailClient()
     text_extractor = TextExtractor()
-    spam_classifier = SpamClassifier(debug=args.debug)
+    spam_classifier = SpamClassifier(debug=args.debug, debug_prompt=args.debug_prompt)
     
     try:
         if not email_client.connect():
@@ -48,9 +61,39 @@ def main():
         spam_count = 0
         for email_data in emails:
             try:
+                from email.header import decode_header
+                
+                # Decode subject for display
+                subject = email_data['subject']
+                try:
+                    decoded_parts = decode_header(subject)
+                    decoded_subject = ""
+                    for part, encoding in decoded_parts:
+                        if isinstance(part, bytes):
+                            decoded_subject += part.decode(encoding or 'utf-8', errors='ignore')
+                        else:
+                            decoded_subject += part
+                    subject = decoded_subject.strip()
+                except:
+                    pass
+                
+                # Decode sender for display  
+                sender = email_data['from']
+                try:
+                    decoded_parts = decode_header(sender)
+                    decoded_sender = ""
+                    for part, encoding in decoded_parts:
+                        if isinstance(part, bytes):
+                            decoded_sender += part.decode(encoding or 'utf-8', errors='ignore')
+                        else:
+                            decoded_sender += part
+                    sender = decoded_sender.strip()
+                except:
+                    pass
+                
                 logging.info(f"Processing email:")
-                logging.info(f"  From: {email_data['from']}")
-                logging.info(f"  Subject: {email_data['subject'][:50]}{'...' if len(email_data['subject']) > 50 else ''}")
+                logging.info(f"  From: {sender}")
+                logging.info(f"  Subject: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                 
                 email_text = text_extractor.prepare_email_for_analysis(email_data)
                 
@@ -58,16 +101,16 @@ def main():
                 
                 if classification == "spam":
                     if args.dry_run:
-                        logging.info(f"[DRY RUN] Would move spam email: {email_data['subject'][:50]}")
+                        logging.info(f"[DRY RUN] Would move spam email: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                         spam_count += 1
                     else:
                         if email_client.move_to_spam(email_data['id']):
                             spam_count += 1
-                            logging.info(f"Moved spam email to spam folder: {email_data['subject'][:50]}")
+                            logging.info(f"Moved spam email to spam folder: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                         else:
-                            logging.error(f"Failed to move spam email: {email_data['subject'][:50]}")
+                            logging.error(f"Failed to move spam email: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                 else:
-                    logging.info(f"Email is not spam: {email_data['subject'][:50]}")
+                    logging.info(f"Email is not spam: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                     
             except SystemExit:
                 raise  # Re-raise SystemExit to allow proper shutdown

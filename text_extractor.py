@@ -48,14 +48,40 @@ class TextExtractor:
     
     @staticmethod
     def prepare_email_for_analysis(email_data: dict) -> str:
+        from email.header import decode_header
+        
+        # Decode subject and sender
         subject = email_data.get('subject', '')
         sender = email_data.get('from', '')
-        text_content = TextExtractor.extract_text_from_email(email_data['message'])
         
-        analysis_text = f"""
-Subject: {subject}
-From: {sender}
-Content: {text_content[:2000]}
-""".strip()
+        # Decode subject
+        try:
+            decoded_parts = decode_header(subject)
+            decoded_subject = ""
+            for part, encoding in decoded_parts:
+                if isinstance(part, bytes):
+                    decoded_subject += part.decode(encoding or 'utf-8', errors='ignore')
+                else:
+                    decoded_subject += part
+            subject = decoded_subject.strip()
+        except:
+            pass  # Keep original if decode fails
+        
+        # Decode sender
+        try:
+            decoded_parts = decode_header(sender)
+            decoded_sender = ""
+            for part, encoding in decoded_parts:
+                if isinstance(part, bytes):
+                    decoded_sender += part.decode(encoding or 'utf-8', errors='ignore')
+                else:
+                    decoded_sender += part
+            sender = decoded_sender.strip()
+        except:
+            pass  # Keep original if decode fails
+        
+        # Only use Subject and From for classification (no content)
+        analysis_text = f"""Subject: {subject}
+From: {sender}""".strip()
         
         return analysis_text
