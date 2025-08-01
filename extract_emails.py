@@ -78,7 +78,7 @@ def extract_emails_to_files():
             logging.error("Failed to connect to email server")
             return 1
         
-        logging.info("✓ Connected to email server")
+        logging.info("Connected to email server")
         
         # Fetch emails
         emails = email_client.fetch_latest_emails()
@@ -86,7 +86,7 @@ def extract_emails_to_files():
             logging.info("No emails found")
             return 0
         
-        logging.info(f"✓ Fetched {len(emails)} emails")
+        logging.info(f"Fetched {len(emails)} emails")
         
         # Process each email
         for i, email_data in enumerate(emails, 1):
@@ -146,13 +146,15 @@ def extract_emails_to_files():
                     f.write('  "classification": "spam_or_not_spam"\n')
                     f.write("}\n")
                 
-                logging.info(f"✓ Saved: {filename}")
+                logging.info(f"Saved: {filename}")
                 
+            except SystemExit:
+                raise  # Re-raise SystemExit to allow proper shutdown
             except Exception as e:
-                logging.error(f"Failed to process email {i}: {e}")
-                continue
+                logging.error(f"FATAL: Failed to process email {i}: {e}")
+                raise SystemExit(f"FATAL: Email extraction failed: {e}")
         
-        logging.info(f"✓ Email extraction completed. Files saved in {data_dir.absolute()}")
+        logging.info(f"Email extraction completed. Files saved in {data_dir.absolute()}")
         logging.info("Manual steps:")
         logging.info("1. Review files in data/ directory")
         logging.info("2. For spam emails, copy the JSON snippet at the end of each file")

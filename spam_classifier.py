@@ -26,14 +26,47 @@ class SpamClassifier:
         try:
             with open(self.examples_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                logging.info(f"Loaded {len(data['examples'])} examples from {self.examples_file}")
-                return data['examples']
+                
+            # Validate JSON structure
+            if not isinstance(data, dict):
+                raise ValueError("JSON must be an object/dict")
+            
+            if 'examples' not in data:
+                raise ValueError("JSON must contain 'examples' key")
+            
+            examples = data['examples']
+            if not isinstance(examples, list):
+                raise ValueError("'examples' must be a list")
+            
+            # Validate each example
+            for i, example in enumerate(examples):
+                if not isinstance(example, dict):
+                    raise ValueError(f"Example {i} must be an object/dict")
+                
+                if 'email' not in example:
+                    raise ValueError(f"Example {i} missing 'email' field")
+                
+                if 'classification' not in example:
+                    raise ValueError(f"Example {i} missing 'classification' field")
+                
+                if example['classification'] not in ['spam', 'not spam']:
+                    raise ValueError(f"Example {i} classification must be 'spam' or 'not spam'")
+            
+            logging.info(f"Loaded and validated {len(examples)} examples from {self.examples_file}")
+            return examples
+            
         except FileNotFoundError:
             logging.error(f"Examples file {self.examples_file} not found")
-            return []
+            raise SystemExit(f"FATAL: Examples file {self.examples_file} not found")
+        except json.JSONDecodeError as e:
+            logging.error(f"Invalid JSON in {self.examples_file}: {e}")
+            raise SystemExit(f"FATAL: Invalid JSON in {self.examples_file}: {e}")
+        except ValueError as e:
+            logging.error(f"Invalid examples format in {self.examples_file}: {e}")
+            raise SystemExit(f"FATAL: Invalid examples format in {self.examples_file}: {e}")
         except Exception as e:
-            logging.error(f"Failed to load examples: {e}")
-            return []
+            logging.error(f"Failed to load examples from {self.examples_file}: {e}")
+            raise SystemExit(f"FATAL: Failed to load examples: {e}")
     
     def _setup_prompts(self):
         """Setup LangChain prompts with loaded examples"""
@@ -67,5 +100,5 @@ class SpamClassifier:
             return result
             
         except Exception as e:
-            logging.error(f"Failed to classify email: {e}")
-            return "not spam"
+            logging.error(f"FATAL: Failed to classify email with LLM: {e}")
+            raise SystemExit(f"FATAL: LLM classification failed: {e}")

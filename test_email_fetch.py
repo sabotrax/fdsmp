@@ -38,7 +38,7 @@ def test_email_fetch():
             logging.error("Failed to connect to email server")
             return 1
         
-        logging.info("✓ IMAP connection successful")
+        logging.info("IMAP connection successful")
         
         # Test email fetching
         logging.info("Fetching latest emails...")
@@ -48,7 +48,7 @@ def test_email_fetch():
             logging.info("No emails found in inbox")
             return 0
         
-        logging.info(f"✓ Fetched {len(emails)} emails")
+        logging.info(f"Fetched {len(emails)} emails")
         
         # Display email details
         for i, email_data in enumerate(emails, 1):
@@ -73,7 +73,7 @@ def test_email_fetch():
             except Exception as e:
                 logging.error(f"Failed to extract text from email: {e}")
         
-        logging.info("✓ Email fetch and display test completed successfully")
+        logging.info("Email fetch and display test completed successfully")
         
     except Exception as e:
         logging.error(f"Test failed: {e}")

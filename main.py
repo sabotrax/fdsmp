@@ -52,9 +52,11 @@ def main():
                 else:
                     logging.info(f"Email is not spam: {email_data['subject'][:50]}")
                     
+            except SystemExit:
+                raise  # Re-raise SystemExit to allow proper shutdown
             except Exception as e:
-                logging.error(f"Error processing email {email_data.get('subject', 'Unknown')}: {e}")
-                continue
+                logging.error(f"FATAL: Error processing email {email_data.get('subject', 'Unknown')}: {e}")
+                raise SystemExit(f"FATAL: Email processing failed: {e}")
         
         logging.info(f"Processing complete. {spam_count} emails moved to spam folder.")
         

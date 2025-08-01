@@ -82,3 +82,9 @@ Key dependencies managed in `pyproject.toml`:
 ## Logging
 
 The application logs to both `fdsmp.log` file and stdout with timestamps and log levels. Email processing progress and errors are tracked for debugging and monitoring.
+
+## Code Style
+
+- NEVER use emojis in code, logs, or commit messages
+- Keep all output professional and concise
+- Use clear, descriptive language without decorative elements

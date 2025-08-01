@@ -43,8 +43,8 @@ class TextExtractor:
             return text_content
             
         except Exception as e:
-            logging.error(f"Failed to extract text from email: {e}")
-            return ""
+            logging.error(f"FATAL: Failed to extract text from email: {e}")
+            raise SystemExit(f"FATAL: Text extraction failed: {e}")
     
     @staticmethod
     def prepare_email_for_analysis(email_data: dict) -> str:

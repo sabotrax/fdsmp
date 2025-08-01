@@ -69,8 +69,8 @@ class EmailClient:
             return emails
             
         except Exception as e:
-            logging.error(f"Failed to fetch emails: {e}")
-            return []
+            logging.error(f"FATAL: Failed to fetch emails from IMAP server: {e}")
+            raise SystemExit(f"FATAL: IMAP fetch failed: {e}")
     
     def move_to_spam(self, email_id: str) -> bool:
         if not self.connection:
@@ -87,5 +87,5 @@ class EmailClient:
             return True
             
         except Exception as e:
-            logging.error(f"Failed to move email {email_id} to spam: {e}")
-            return False
+            logging.error(f"FATAL: Failed to move email {email_id} to spam folder: {e}")
+            raise SystemExit(f"FATAL: Failed to move spam email: {e}")
