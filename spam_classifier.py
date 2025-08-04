@@ -17,6 +17,11 @@ class SpamClassifier:
         if debug:
             logging.getLogger("langchain").setLevel(logging.DEBUG)
             logging.getLogger("langchain_ollama").setLevel(logging.DEBUG)
+        else:
+            # Suppress HTTP requests from LangChain when not in debug mode
+            logging.getLogger("langchain").setLevel(logging.WARNING)
+            logging.getLogger("langchain_ollama").setLevel(logging.WARNING)
+            logging.getLogger("httpx").setLevel(logging.WARNING)
         
         self.ollama_base_url = os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')
         self.model_name = os.getenv('OLLAMA_MODEL', 'llama3.1')
@@ -62,10 +67,9 @@ class SpamClassifier:
                 if 'classification' not in example:
                     raise ValueError(f"Example {i} missing 'classification' field")
                 
-                if example['classification'] not in ['spam', 'not spam']:
-                    raise ValueError(f"Example {i} classification must be 'spam' or 'not spam'")
+                if example['classification'] not in ['typ 1', 'typ 2']:
+                    raise ValueError(f"Example {i} classification must be 'typ 1' or 'typ 2'")
             
-            logging.info(f"Loaded and validated {len(examples)} examples from {self.examples_file}")
             return examples
             
         except FileNotFoundError:
@@ -81,6 +85,10 @@ class SpamClassifier:
             logging.error(f"Failed to load examples from {self.examples_file}: {e}")
             raise SystemExit(f"FATAL: Failed to load examples: {e}")
     
+    def _estimate_tokens(self, text: str) -> int:
+        """Rough token estimation (1 token ≈ 4 characters for most models)"""
+        return len(text) // 4
+    
     def _setup_prompts(self):
         """Setup LangChain prompts with loaded examples"""
         self.example_template = PromptTemplate(
@@ -91,10 +99,17 @@ class SpamClassifier:
         self.prompt = FewShotPromptTemplate(
             examples=self.spam_examples,
             example_prompt=self.example_template,
-            prefix="Classify as 'spam' or 'not spam' based on these examples:",
+            prefix="Classify as 'typ 1' or 'typ 2' based on these examples. Answer ONLY 'typ 1' or 'typ 2', no explanations:",
             suffix="Email:\n{email}\n\nClassification:",
             input_variables=["email"]
         )
+        
+        # Calculate base prompt size (without actual email)
+        sample_prompt = self.prompt.format(email="")
+        self.base_prompt_tokens = self._estimate_tokens(sample_prompt)
+        
+        logging.info(f"Loaded and validated {len(self.spam_examples)} examples from {self.examples_file}")
+        logging.info(f"Base prompt size: ~{self.base_prompt_tokens} tokens")
     
     def classify_email(self, email_text: str) -> str:
         try:
@@ -119,12 +134,19 @@ class SpamClassifier:
             
             classification = response.strip().lower()
             
-            if "spam" in classification and "not spam" not in classification:
+            # Extract only first line to avoid long explanations
+            first_line = classification.split('\n')[0].strip()
+            
+            # Map typ 2 -> spam, typ 1 -> not spam  
+            if "typ 2" in first_line:
                 result = "spam"
+            elif "typ 1" in first_line:
+                result = "not spam"
             else:
+                # Fallback: assume not spam if unclear
                 result = "not spam"
             
-            logging.info(f"Email classified as: {result}")
+            logging.info(f"Email classified as: {result} (raw: {first_line})")
             return result
             
         except Exception as e:

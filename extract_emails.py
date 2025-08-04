@@ -4,6 +4,7 @@ import os
 import json
 import logging
 import sys
+import argparse
 from datetime import datetime
 from pathlib import Path
 from email.header import decode_header
@@ -59,10 +60,13 @@ def sanitize_filename(text, max_length=30):
     
     return text or "email"
 
-def extract_emails_to_files():
+def extract_emails_to_files(max_emails=None):
     """Extract latest emails and save each to individual files in data/ directory"""
     setup_logging()
-    logging.info("Starting email extraction to data/ directory")
+    if max_emails:
+        logging.info(f"Starting email extraction to data/ directory (limit: {max_emails} emails)")
+    else:
+        logging.info("Starting email extraction to data/ directory")
     
     # Create data directory if it doesn't exist
     data_dir = Path("data")
@@ -95,7 +99,10 @@ def extract_emails_to_files():
                 sender = email_data.get('from', 'Unknown Sender')
                 email_id = email_data.get('id', str(i))
                 
-                logging.info(f"Processing email {i}/{len(emails)}: {subject[:50]}...")
+                # Decode subject for display
+                decoded_subject = decode_email_subject(subject)
+                
+                logging.info(f"Processing email {i}/{len(emails)}: {decoded_subject[:50]}...")
                 
                 # Extract text content
                 email_text = text_extractor.prepare_email_for_analysis(email_data)
@@ -135,15 +142,15 @@ def extract_emails_to_files():
                     f.write("-" * 80 + "\n")
                     f.write(email_text)
                     f.write("\n" + "-" * 80 + "\n")
-                    f.write("CLASSIFICATION: unknown (manually set to 'spam' or 'not spam')\n")
+                    f.write("CLASSIFICATION: unknown (manually set to 'typ 1' or 'typ 2')\n")
                     f.write("-" * 80 + "\n")
-                    f.write("\nTo add to spam_examples.json:\n")
+                    f.write("\nTo add to spam.json:\n")
                     f.write("{\n")
                     # Remove Windows line endings and clean up text
                     clean_text = email_text.replace('\r\n', '\n').replace('\r', '\n')
                     escaped_text = clean_text.replace('"', '\\"').replace('\n', '\\n')
                     f.write(f'  "email": "{escaped_text}",\n')
-                    f.write('  "classification": "spam_or_not_spam"\n')
+                    f.write('  "classification": "typ_1_or_typ_2"\n')
                     f.write("}\n")
                 
                 logging.info(f"Saved: {filename}")
@@ -157,8 +164,8 @@ def extract_emails_to_files():
         logging.info(f"Email extraction completed. Files saved in {data_dir.absolute()}")
         logging.info("Manual steps:")
         logging.info("1. Review files in data/ directory")
-        logging.info("2. For spam emails, copy the JSON snippet at the end of each file")
-        logging.info("3. Add to spam_examples.json manually")
+        logging.info("2. For spam/ham emails, copy the JSON snippet at the end of each file")
+        logging.info("3. Add to spam.json manually (typ 1 = not spam, typ 2 = spam)")
         
     except Exception as e:
         logging.error(f"Email extraction failed: {e}")
@@ -170,6 +177,15 @@ def extract_emails_to_files():
     return 0
 
 if __name__ == "__main__":
-    exit_code = extract_emails_to_files()
+    parser = argparse.ArgumentParser(description='Extract emails to data/ directory for analysis')
+    parser.add_argument('--emails', type=int, metavar='N',
+                       help='Number of emails to extract (overrides .env MAX_EMAILS_TO_PROCESS)')
+    args = parser.parse_args()
+    
+    # Override MAX_EMAILS_TO_PROCESS if --emails is specified
+    if args.emails:
+        os.environ['MAX_EMAILS_TO_PROCESS'] = str(args.emails)
+    
+    exit_code = extract_emails_to_files(max_emails=args.emails)
     print(f"\nExtraction completed with exit code: {exit_code}")
     sys.exit(exit_code)
