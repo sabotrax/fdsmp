@@ -4,20 +4,17 @@ Ein Filter-Skript, das IMAP-E-Mails nach Vorgabe mit einem lokalen LLM analysier
 
 ## Features
 
-- **3-Phasen Offline-Architektur**: FETCH → CLASSIFY → MOVE (keine IMAP-Timeouts)
-- **UID-basierte IMAP Operationen**: Persistente Email-Identifikation
-- **LangChain Few-Shot Learning**: Intelligente Spam-Erkennung mit Beispielen
-- **Robustes Error Handling**: Graceful handling von verschwundenen Emails
+- **3-Phasen Offline-Architektur**: FETCH → CLASSIFY → MOVE (verhindert IMAP-Timeouts)
+- **LangChain Few-Shot Template**: LLM-gestützte Spam-Erkennung mit Beispielen
 - **Batch Processing**: Effiziente Verarbeitung mehrerer Emails
-- **Typ-System**: Umgeht LLM-Spam-Bias mit "typ 1/typ 2" Klassifikation
-- **Debug-Modi**: Umfassende Logging- und Debugging-Optionen
+- **Debug-Modi**: Logging- und Debugging-Optionen
 - **Dry-Run Modus**: Sicheres Testen ohne Email-Manipulation
 
 ## Anlass
 
-Mein Mail-Provider patzt bei der Spamerkennung. Je "größer" der Versender, desto weniger funktioniert manuelles Training.
+Mein Mail-Provider patzt bei der Spamerkennung. Je "größer" der Versender, desto weniger funktioniert das manuelle Spam-Training.
 Werbung von Alibaba kommt praktisch immer durch. Dabei hat natürlich nichts mit irgendetwas zu tun.
-Zur Rettung eilt ein Raspberry 5 mit 8 GB RAM und Vibe-Coding.
+Zur Rettung eilt herbei ein Raspberry 5 mit 8 GB RAM und Vibe-Coding.
 
 Die Frage nach dem Sinn sollte man sich bei KI-Inferenz auf einem Raspberry Pi besser nicht stellen.
 Selbst mit dem kleinsten Modell Qwen3:0.6b dauert die Analyse eine Mail ca. eine Minute.
@@ -26,7 +23,7 @@ Selbst mit dem kleinsten Modell Qwen3:0.6b dauert die Analyse eine Mail ca. eine
 
 ### Voraussetzungen
 
-# Debian 12 Bookworm
+### Debian 12 Bookworm
 
 ```bash
 # Python 3.11+
@@ -43,7 +40,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Ollama installieren
 curl -fsSL https://ollama.ai/install.sh | sh
 
-# Empfohlene LLM Modelle laden
+# Empfohlene LLMs laden
 ollama pull qwen3:0.6b      # Schnell, 600MB
 ollama pull gemma3:1b       # Mittel, 815MB  
 ollama pull phi4-mini       # Groß, 2.5GB (braucht 3.9GB RAM)
@@ -53,10 +50,10 @@ ollama pull phi4-mini       # Groß, 2.5GB (braucht 3.9GB RAM)
 
 ```bash
 # Repository klonen/downloaden
-git clone <repository-url> fdsmp
+git clone https://github.com/sabotrax/fdsmp.git fdsmp
 cd fdsmp
 
-# Dependencies installieren
+# Abhängigkeiten installieren
 uv sync
 
 # Konfiguration aus Template erstellen
@@ -90,28 +87,32 @@ LLM_TEMPERATURE=0.7
 MAX_EMAILS_TO_PROCESS=3
 ```
 
-### Beispiel-Mails für LLM bereitstellen
+## Beispiel-Mails für LLM bereitstellen
 
-## Spam-Klassifikation
+### Spam-Klassifikation
 
 Das System verwendet **typ 1/typ 2** zur Kennzeichnung, um LLM-Spam-Bias zu umgehen:
-- **typ 1** = not spam (legitime Emails)
-- **typ 2** = spam (unerwünschte Emails)
+- **typ 1** = kein Spam/Ham
+- **typ 2** = Spam
 
-### Mail-Beispiele hinzufügen
+### Beispiel-Mails hinzufügen
 
 Spam und Ham sollten gleich vertreten sein. Je unterschiedlicher, desto besser.
-Die Liste sollte nicht riesig werden, weil Sie bei der Analyse jeder Mail komplett vom LLM verarbeitet werden muss.
+Die Liste sollte nicht riesig werden, weil Sie bei jeder Mail vom LLM verarbeitet werden muss.
 Man sollte zwischen eigener Anforderung und vorhandenen Ressourcen wie Leistungsfähigkeit des Modells, CPU/GPU und RAM abwägen.
 
-1. **Emails extrahieren:**
+**Emails extrahieren:**
+
+Das Skript zieht die neuesten N Mails und legt sie in `data/` ab.
+
 ```bash
 uv run extract_emails.py --emails 10
 ```
 
-2. **Dateien in `data/` prüfen**
+**JSON-Snippets aus Dateien kopieren und zu `spam.json` (wie in .env festgelegt) hinzufügen:**
 
-3. **JSON-Snippets aus Dateien kopieren und zu `spam.json` hinzufügen:**
+Die Einträge müssen nicht geordnet sein.
+
 ```json
 {
   "examples": [
@@ -127,6 +128,8 @@ uv run extract_emails.py --emails 10
 }
 ```
 
+### Ausführung
+
 ```bash
 # Dry-Run Test (verschiebt keine Emails)
 uv run main.py --dry-run --emails 5
@@ -138,7 +141,7 @@ uv run main.py --dry-run --debug --emails 3
 uv run main.py --emails 3
 ```
 
-## Usage
+## Verwendung
 
 ### Kommandozeilen-Optionen
 
@@ -153,35 +156,14 @@ Optionen:
   -h, --help          Hilfe anzeigen
 ```
 
-### Beispiele
-
-```bash
-# 10 Emails verarbeiten
-uv run main.py --emails 10
-
-# Spam-Detection testen ohne Emails zu verschieben
-uv run main.py --dry-run --emails 5
-
-# Debug-Modus für Troubleshooting
-uv run main.py --debug --debug-prompt --emails 1
-
-# Email-Extraktion für neue Spam-Beispiele
-uv run extract_emails.py --emails 5
-```
-
 ## Cron Setup
 
-### Einmal pro Stunde, 10 Emails verarbeiten:
+### Alle 15 Minuten
 ```bash
 crontab -e
 
 # Diese Zeile hinzufügen:
-0 * * * * cd /tank/ayb/srv/dev/fdsmp && /usr/bin/uv run main.py --emails 10 >> fdsmp-cron.log 2>&1
-```
-
-### Häufigere Ausführung (alle 15 Minuten):
-```bash
-*/15 * * * * cd /tank/ayb/srv/dev/fdsmp && /usr/bin/uv run main.py --emails 5 >> fdsmp-cron.log 2>&1
+*/15 * * * * cd /PFAD_ANPASSEN/fdsmp && /usr/bin/uv run main.py >> fdsmp-cron.log 2>&1
 ```
 
 **Wichtig:** Verwende absolute Pfade für `uv` und das Verzeichnis.
@@ -196,12 +178,11 @@ crontab -e
 - IMAP-Verbindung trennen
 
 **Phase 2 - CLASSIFY (Offline):**
-- LLM-Klassifikation ohne IMAP-Verbindung
-- Kein Timeout-Risiko bei langer LLM-Verarbeitung
+- LLM-Klassifikation
 - Spam-Email UIDs sammeln
 
 **Phase 3 - MOVE:**
-- IMAP-Verbindung für Batch-Operations
+- IMAP-Verbindung für Batch-Operation
 - Robustes Error Handling für verschwundene Emails
 - Detaillierte Success/Failure-Berichte
 
@@ -258,10 +239,11 @@ uv run debug_scripts/test_imap_folders.py
 uv run main.py --debug --debug-prompt --emails 1
 ```
 
-**Alle Emails als Spam klassifiziert:**
-- LLM-Model zu klein → Größeres Model verwenden
-- Zu wenige Examples → Mehr Beispiele in `spam.json` hinzufügen
-- Temperatur zu niedrig → `LLM_TEMPERATURE=0.7` in `.env`
+**Emails falsch klassifiziert:**
+- LLM zu klein/schwach → Größeres Modell verwenden
+- Zu wenige Beispiele für das LLM → Mehr in `spam.json` hinzufügen
+- Temperatur verändern in `.env` (LLM-Wissen erforderlich)
+- LLM_NUM_CTX korrekt? Token könnten überschitten sein durch großes Prompt (LLM-Wissen erforderlich)
 
 ## 🔗 Development
 
