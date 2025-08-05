@@ -144,17 +144,32 @@ def main():
                     return 1
                 
                 moved_count = 0
-                for spam_email in spam_email_uids:
-                    try:
-                        if email_client.move_to_spam(spam_email['uid']):
-                            moved_count += 1
-                            logging.info(f"Moved spam email: {spam_email['subject']}")
-                        else:
-                            logging.error(f"Failed to move spam email: {spam_email['subject']}")
-                    except Exception as e:
-                        logging.error(f"Error moving spam email UID {spam_email['uid']}: {e}")
+                failed_count = 0
+                disappeared_count = 0
                 
-                logging.info(f"Processing complete. {moved_count}/{spam_count} emails moved to spam folder.")
+                for spam_email in spam_email_uids:
+                    success, error_message = email_client.move_to_spam(spam_email['uid'])
+                    
+                    if success:
+                        moved_count += 1
+                        logging.info(f"Moved spam email: {spam_email['subject']}")
+                    else:
+                        failed_count += 1
+                        if "not found" in error_message.lower():
+                            disappeared_count += 1
+                            logging.warning(f"Email disappeared (user moved/deleted?): {spam_email['subject']} - {error_message}")
+                        else:
+                            logging.error(f"Failed to move spam email: {spam_email['subject']} - {error_message}")
+                
+                # Detailed completion summary
+                if failed_count == 0:
+                    logging.info(f"Processing complete. All {moved_count}/{spam_count} spam emails moved successfully.")
+                else:
+                    logging.info(f"Processing complete. {moved_count}/{spam_count} emails moved to spam folder.")
+                    if disappeared_count > 0:
+                        logging.info(f"  {disappeared_count} emails disappeared (likely moved/deleted by user)")  
+                    if failed_count - disappeared_count > 0:
+                        logging.warning(f"  {failed_count - disappeared_count} emails failed to move due to other errors")
         else:
             logging.info("=== PHASE 3: NO SPAM EMAILS TO MOVE ===")
             logging.info("Processing complete. No spam emails found.")

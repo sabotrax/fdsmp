@@ -81,28 +81,44 @@ class EmailClient:
             logging.error(f"FATAL: Failed to fetch emails from IMAP server: {e}")
             raise SystemExit(f"FATAL: IMAP fetch failed: {e}")
     
-    def move_to_spam(self, email_uid: str) -> bool:
-        """Move email to spam folder using UID (persistent identifier)"""
+    def move_to_spam(self, email_uid: str) -> tuple[bool, str]:
+        """
+        Move email to spam folder using UID (persistent identifier)
+        
+        Returns:
+            tuple[bool, str]: (success, error_message)
+            - (True, "") if successful
+            - (False, error_description) if failed
+        """
         if not self.connection:
-            raise Exception("Not connected to server")
+            return False, "Not connected to server"
         
         try:
-            self.connection.select(self.inbox_folder)
+            # First check if email still exists in inbox
+            select_result = self.connection.select(self.inbox_folder)
+            if select_result[0] != 'OK':
+                return False, f"Cannot select inbox folder: {select_result[1]}"
+            
+            # Check if UID still exists
+            search_result = self.connection.uid('search', None, f'UID {email_uid}')
+            if search_result[0] != 'OK' or not search_result[1][0]:
+                return False, f"Email UID {email_uid} not found (may have been moved/deleted by user)"
             
             # Use UID COPY and UID STORE for persistent operations
-            result = self.connection.uid('copy', email_uid, self.spam_folder)
-            if result[0] != 'OK':
-                raise Exception(f"UID COPY failed: {result}")
+            copy_result = self.connection.uid('copy', email_uid, self.spam_folder)
+            if copy_result[0] != 'OK':
+                error_msg = copy_result[1][0].decode() if copy_result[1] else "Unknown error"
+                return False, f"UID COPY failed: {error_msg}"
             
-            result = self.connection.uid('store', email_uid, '+FLAGS', '\\Deleted')
-            if result[0] != 'OK':
-                raise Exception(f"UID STORE failed: {result}")
+            store_result = self.connection.uid('store', email_uid, '+FLAGS', '\\Deleted')
+            if store_result[0] != 'OK':
+                error_msg = store_result[1][0].decode() if store_result[1] else "Unknown error"
+                return False, f"UID STORE failed: {error_msg}"
                 
             self.connection.expunge()
             
             logging.info(f"Moved email UID {email_uid} to spam folder")
-            return True
+            return True, ""
             
         except Exception as e:
-            logging.error(f"FATAL: Failed to move email UID {email_uid} to spam folder: {e}")
-            raise SystemExit(f"FATAL: Failed to move spam email: {e}")
+            return False, f"IMAP operation failed: {str(e)}"
