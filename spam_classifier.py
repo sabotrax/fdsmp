@@ -27,12 +27,13 @@ class SpamClassifier:
         self.model_name = os.getenv('OLLAMA_MODEL', 'llama3.1')
         self.examples_file = os.getenv('SPAM_EXAMPLES_FILE', 'spam_examples.json')
         self.temperature = float(os.getenv('LLM_TEMPERATURE', '0.2'))
+        self.num_ctx = int(os.getenv('LLM_NUM_CTX', '8192'))
         
         self.llm = OllamaLLM(
             base_url=self.ollama_base_url,
             model=self.model_name,
             temperature=self.temperature,
-            num_ctx=8192
+            num_ctx=self.num_ctx
         )
         
         

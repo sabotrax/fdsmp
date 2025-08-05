@@ -1,8 +1,8 @@
-# fdsmp - Fuck Dich Scheiss Mail-Provider
+# fdsmp - Eff Dich Sch**ss Mail-Provider
 
-Ein automatischer Spam-Filter mit robuster 3-Phasen-Architektur, der IMAP-E-Mails mit einem lokalen LLM (Ollama) analysiert und Spam-Nachrichten in den Spam-Ordner verschiebt.
+Ein Filter-Skript, das IMAP-E-Mails nach Vorgabe mit einem lokalen LLM analysiert und verschiebt.
 
-## ✨ Features
+## Features
 
 - **3-Phasen Offline-Architektur**: FETCH → CLASSIFY → MOVE (keine IMAP-Timeouts)
 - **UID-basierte IMAP Operationen**: Persistente Email-Identifikation
@@ -13,36 +13,43 @@ Ein automatischer Spam-Filter mit robuster 3-Phasen-Architektur, der IMAP-E-Mail
 - **Debug-Modi**: Umfassende Logging- und Debugging-Optionen
 - **Dry-Run Modus**: Sicheres Testen ohne Email-Manipulation
 
-## 🚀 Quick Start
+## Anlass
 
-### 1. Voraussetzungen installieren
+Mein Mail-Provider patzt bei der Spamerkennung. Je "größer" der Versender, desto weniger funktioniert manuelles Training.
+Werbung von Alibaba kommt praktisch immer durch. Dabei hat natürlich nichts mit irgendetwas zu tun.
+Zur Rettung eilt ein Raspberry 5 mit 8 GB RAM und Vibe-Coding.
+
+Die Frage nach dem Sinn sollte man sich bei KI-Inferenz auf einem Raspberry Pi besser nicht stellen.
+Selbst mit dem kleinsten Modell Qwen3:0.6b dauert die Analyse eine Mail ca. eine Minute.
+
+## Installation
+
+### Voraussetzungen
+
+# Debian 12 Bookworm
 
 ```bash
-# Python 3.11+ installieren (falls nicht vorhanden)
-# Ubuntu/Debian:
+# Python 3.11+
 sudo apt update && sudo apt install python3 python3-pip
-
-# macOS:
-brew install python@3.11
 
 # uv Package Manager installieren
 curl -LsSf https://astral.sh/uv/install.sh | sh
 # oder: pip install uv
 ```
 
-### 2. Ollama installieren und Model laden
+### Ollama installieren und Model laden
 
 ```bash
 # Ollama installieren
 curl -fsSL https://ollama.ai/install.sh | sh
 
-# Empfohlene LLM Models laden
+# Empfohlene LLM Modelle laden
 ollama pull qwen3:0.6b      # Schnell, 600MB
 ollama pull gemma3:1b       # Mittel, 815MB  
 ollama pull phi4-mini       # Groß, 2.5GB (braucht 3.9GB RAM)
 ```
 
-### 3. Repository setup
+### Repository setup
 
 ```bash
 # Repository klonen/downloaden
@@ -54,90 +61,55 @@ uv sync
 
 # Konfiguration aus Template erstellen
 cp .env.template .env
-nano .env  # IMAP-Daten eintragen
 ```
 
-### 4. Test-Ausführung
+### Skript konfigurieren
+
+Mindestens IMAP und Mail-Ordner konfigurieren
 
 ```bash
-# Dry-Run Test (verschiebt keine Emails)
-uv run main.py --dry-run --emails 5
-
-# Debug-Modus für detaillierte Logs
-uv run main.py --dry-run --debug --emails 3
-
-# Erste echte Ausführung
-uv run main.py --emails 3
-```
-
-## 📖 Usage
-
-### Kommandozeilen-Optionen
-
-```bash
-uv run main.py [OPTIONS]
-
-Optionen:
-  --dry-run           Emails klassifizieren aber nicht verschieben
-  --debug             Debug-Logging für LLM-Klassifikation aktivieren  
-  --debug-prompt      Vollständigen Prompt anzeigen (implies --debug)
-  --emails N          Anzahl Emails verarbeiten (überschreibt .env)
-  -h, --help          Hilfe anzeigen
-```
-
-### Beispiele
-
-```bash
-# 10 Emails verarbeiten (Produktions-Modus)
-uv run main.py --emails 10
-
-# Spam-Detection testen ohne Emails zu verschieben
-uv run main.py --dry-run --emails 5
-
-# Debug-Modus für Troubleshooting
-uv run main.py --debug --debug-prompt --emails 1
-
-# Email-Extraktion für neue Spam-Beispiele
-uv run extract_emails.py --emails 5
-```
-
-## ⚙️ Konfiguration (.env)
-
-```bash
-# IMAP Server Konfiguration
-IMAP_SERVER=imap.ionos.de
+# IMAP Configuration
+IMAP_SERVER=imap.gmail.com
 IMAP_PORT=993
-IMAP_USERNAME=deine@email.de
-IMAP_PASSWORD=dein_passwort
+IMAP_USERNAME=your-email@gmail.com
+IMAP_PASSWORD=your-app-password
 
-# Email Ordner (server-spezifisch)
+# Email Folders
 INBOX_FOLDER=INBOX
-SPAM_FOLDER=Spam           # Oft "Spam", "Junk" oder "SPAM"
+SPAM_FOLDER=SPAM
 
-# Ollama LLM Konfiguration
+# Ollama Configuration
 OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=qwen3:0.6b    # Empfohlen: schnell und akkurat
-LLM_TEMPERATURE=0.7        # 0.2-0.7 für Kreativität vs Konsistenz
+OLLAMA_MODEL=qwen3:0.6b
 
-# Spam Klassifikation
-SPAM_EXAMPLES_FILE=spam.json
-MAX_EMAILS_TO_PROCESS=5    # Standard pro Durchlauf
+# Spam Classification
+SPAM_EXAMPLES_FILE=spam_examples.json
+LLM_TEMPERATURE=0.7
+
+# Processing Configuration
+MAX_EMAILS_TO_PROCESS=3
 ```
 
-## 🎯 Spam-Klassifikation anpassen
+### Beispiel-Mails für LLM bereitstellen
 
-Das System verwendet das **typ 1/typ 2 System** um LLM-Spam-Bias zu umgehen:
+## Spam-Klassifikation
+
+Das System verwendet **typ 1/typ 2** zur Kennzeichnung, um LLM-Spam-Bias zu umgehen:
 - **typ 1** = not spam (legitime Emails)
 - **typ 2** = spam (unerwünschte Emails)
 
-### Neue Spam-Beispiele hinzufügen
+### Mail-Beispiele hinzufügen
+
+Spam und Ham sollten gleich vertreten sein. Je unterschiedlicher, desto besser.
+Die Liste sollte nicht riesig werden, weil Sie bei der Analyse jeder Mail komplett vom LLM verarbeitet werden muss.
+Man sollte zwischen eigener Anforderung und vorhandenen Ressourcen wie Leistungsfähigkeit des Modells, CPU/GPU und RAM abwägen.
 
 1. **Emails extrahieren:**
 ```bash
 uv run extract_emails.py --emails 10
 ```
 
-2. **Generierte Dateien in `data/` prüfen**
+2. **Dateien in `data/` prüfen**
 
 3. **JSON-Snippets aus Dateien kopieren und zu `spam.json` hinzufügen:**
 ```json
@@ -155,7 +127,49 @@ uv run extract_emails.py --emails 10
 }
 ```
 
-## 🕐 Cron Setup (Automatisierung)
+```bash
+# Dry-Run Test (verschiebt keine Emails)
+uv run main.py --dry-run --emails 5
+
+# Debug-Modus für detaillierte Logs
+uv run main.py --dry-run --debug --emails 3
+
+# Erste echte Ausführung
+uv run main.py --emails 3
+```
+
+## Usage
+
+### Kommandozeilen-Optionen
+
+```bash
+uv run main.py [OPTIONS]
+
+Optionen:
+  --dry-run           Emails klassifizieren, aber nicht verschieben
+  --debug             Debug-Logging für LLM-Klassifikation aktivieren  
+  --debug-prompt      Vollständigen Prompt anzeigen (erweitert --debug)
+  --emails N          Anzahl Emails verarbeiten (überschreibt Wert aus .env)
+  -h, --help          Hilfe anzeigen
+```
+
+### Beispiele
+
+```bash
+# 10 Emails verarbeiten
+uv run main.py --emails 10
+
+# Spam-Detection testen ohne Emails zu verschieben
+uv run main.py --dry-run --emails 5
+
+# Debug-Modus für Troubleshooting
+uv run main.py --debug --debug-prompt --emails 1
+
+# Email-Extraktion für neue Spam-Beispiele
+uv run extract_emails.py --emails 5
+```
+
+## Cron Setup
 
 ### Einmal pro Stunde, 10 Emails verarbeiten:
 ```bash
@@ -199,7 +213,7 @@ Das System behandelt folgende Szenarien graceful:
 - **Spam-Ordner-Probleme**: Berechtigungen oder Speicherplatz
 - **LLM-Timeouts**: Durch Offline-Processing eliminiert
 
-## 📊 Logging
+## Logging
 
 ### Log-Ausgabe verstehen
 
@@ -219,7 +233,7 @@ Das System behandelt folgende Szenarien graceful:
 - **`fdsmp.log`**: Hauptlog-Datei (automatisch rotiert)
 - **`fdsmp-cron.log`**: Cron-Ausführungen (bei Cron-Setup)
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Häufige Probleme
 
@@ -276,6 +290,6 @@ fdsmp/
 └── CLAUDE.md          # Entwickler-Dokumentation
 ```
 
-## 📝 License
+## License
 
 MIT License - Nutze es wie du willst, aber Spam nervt trotzdem.
