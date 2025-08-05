@@ -147,7 +147,10 @@ class SpamClassifier:
                 # Fallback: assume not spam if unclear
                 result = "not spam"
             
-            logging.info(f"Email classified as: {result} (raw: {first_line})")
+            if self.debug:
+                logging.info(f"Email classified as: {result} (raw: {first_line})")
+            else:
+                logging.info(f"Email classified as: {result}")
             return result
             
         except Exception as e:
