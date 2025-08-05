@@ -1,11 +1,11 @@
-# fdsmp - Eff Dich Sch**ss Mail-Provider
+# fdsmp
 
 Ein Filter-Skript, das IMAP-E-Mails nach Vorgabe mit einem lokalen LLM analysiert und verschiebt.
 
 ## Features
 
 - **3-Phasen Offline-Architektur**: FETCH → CLASSIFY → MOVE (verhindert IMAP-Timeouts)
-- **LangChain Few-Shot Template**: LLM-gestützte Spam-Erkennung mit Beispielen
+- **LangChain Few-Shot Examples**: LLM-gestützte Spam-Erkennung mit Beispielen
 - **Batch Processing**: Effiziente Verarbeitung mehrerer Emails
 - **Debug-Modi**: Logging- und Debugging-Optionen
 - **Dry-Run Modus**: Sicheres Testen ohne Email-Manipulation
@@ -14,27 +14,25 @@ Ein Filter-Skript, das IMAP-E-Mails nach Vorgabe mit einem lokalen LLM analysier
 
 Mein Mail-Provider patzt bei der Spamerkennung. Je "größer" der Versender, desto weniger funktioniert das manuelle Spam-Training.
 Werbung von Alibaba kommt praktisch immer durch. Dabei hat natürlich nichts mit irgendetwas zu tun.
-Zur Rettung eilt herbei ein Raspberry 5 mit 8 GB RAM und Vibe-Coding.
+Zur Rettung herbei eilt ein Raspberry 5 mit 8 GB RAM und Vibe-Coding.
 
 Die Frage nach dem Sinn sollte man sich bei KI-Inferenz auf einem Raspberry Pi besser nicht stellen.
-Selbst mit dem kleinsten Modell Qwen3:0.6b dauert die Analyse eine Mail ca. eine Minute.
+Selbst mit dem kleinsten Modell Qwen3:0.6b dauert die Analyse einer Mail ca. eine Minute.
 
 ## Installation
 
-### Voraussetzungen
-
-### Debian 12 Bookworm
+### Python und Paketmanager
 
 ```bash
 # Python 3.11+
 sudo apt update && sudo apt install python3 python3-pip
 
-# uv Package Manager installieren
+# uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 # oder: pip install uv
 ```
 
-### Ollama installieren und Model laden
+### Ollama installieren und Modell laden
 
 ```bash
 # Ollama installieren
@@ -46,7 +44,7 @@ ollama pull gemma3:1b       # Mittel, 815MB
 ollama pull phi4-mini       # Groß, 2.5GB (braucht 3.9GB RAM)
 ```
 
-### Repository setup
+### Repository-Setup
 
 ```bash
 # Repository klonen/downloaden
@@ -62,7 +60,7 @@ cp .env.template .env
 
 ### Skript konfigurieren
 
-Mindestens IMAP und Mail-Ordner konfigurieren
+Mindestens IMAP und Mail-Ordner konfigurieren.
 
 ```bash
 # IMAP Configuration
@@ -99,9 +97,9 @@ Das System verwendet **typ 1/typ 2** zur Kennzeichnung, um LLM-Spam-Bias zu umge
 
 Spam und Ham sollten gleich vertreten sein. Je unterschiedlicher, desto besser.
 Die Liste sollte nicht riesig werden, weil Sie bei jeder Mail vom LLM verarbeitet werden muss.
-Man sollte zwischen eigener Anforderung und vorhandenen Ressourcen wie Leistungsfähigkeit des Modells, CPU/GPU und RAM abwägen.
+Man sollte zwischen Anforderung und vorhandenen Ressourcen wie Leistungsfähigkeit des Modells, CPU/GPU und RAM abwägen.
 
-**Emails extrahieren:**
+**Mails extrahieren:**
 
 Das Skript zieht die neuesten N Mails und legt sie in `data/` ab.
 
@@ -109,7 +107,7 @@ Das Skript zieht die neuesten N Mails und legt sie in `data/` ab.
 uv run extract_emails.py --emails 10
 ```
 
-**JSON-Snippets aus Dateien kopieren und zu `spam.json` (wie in .env festgelegt) hinzufügen:**
+**JSON-Snippets aus Dateien kopieren und zu `spam_examples.json` hinzufügen:**
 
 Die Einträge müssen nicht geordnet sein.
 
@@ -131,7 +129,7 @@ Die Einträge müssen nicht geordnet sein.
 ### Ausführung
 
 ```bash
-# Dry-Run Test (verschiebt keine Emails)
+# Dry-Run Test (verschiebt keine Mails)
 uv run main.py --dry-run --emails 5
 
 # Debug-Modus für detaillierte Logs
