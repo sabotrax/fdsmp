@@ -53,12 +53,22 @@ def main():
             logging.error("Failed to connect to email server")
             return 1
         
+        # PHASE 1: FETCH - Get emails and disconnect IMAP
+        logging.info("=== PHASE 1: FETCHING EMAILS ===")
         emails = email_client.fetch_latest_emails()
         if not emails:
             logging.info("No emails to process")
             return 0
         
-        spam_count = 0
+        # Disconnect IMAP to avoid timeouts during LLM processing
+        email_client.disconnect()
+        logging.info("Disconnected from IMAP server for offline processing")
+        
+        # PHASE 2: CLASSIFY - Offline LLM processing (no IMAP timeouts)
+        logging.info("=== PHASE 2: CLASSIFYING EMAILS (OFFLINE) ===")
+        spam_email_uids = []
+        processed_count = 0
+        
         for email_data in emails:
             try:
                 from email.header import decode_header
@@ -91,7 +101,8 @@ def main():
                 except:
                     pass
                 
-                logging.info(f"Processing email:")
+                processed_count += 1
+                logging.info(f"Processing email {processed_count}/{len(emails)}:")
                 logging.info(f"  From: {sender}")
                 logging.info(f"  Subject: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                 
@@ -100,15 +111,13 @@ def main():
                 classification = spam_classifier.classify_email(email_text)
                 
                 if classification == "spam":
-                    if args.dry_run:
-                        logging.info(f"[DRY RUN] Would move spam email: {subject[:50]}{'...' if len(subject) > 50 else ''}")
-                        spam_count += 1
-                    else:
-                        if email_client.move_to_spam(email_data['id']):
-                            spam_count += 1
-                            logging.info(f"Moved spam email to spam folder: {subject[:50]}{'...' if len(subject) > 50 else ''}")
-                        else:
-                            logging.error(f"Failed to move spam email: {subject[:50]}{'...' if len(subject) > 50 else ''}")
+                    # Collect spam email UID for later batch move operation
+                    spam_email_uids.append({
+                        'uid': email_data['id'],
+                        'subject': subject[:50] + ('...' if len(subject) > 50 else ''),
+                        'sender': sender
+                    })
+                    logging.info(f"Marked as spam (will move later): {subject[:50]}{'...' if len(subject) > 50 else ''}")
                 else:
                     logging.info(f"Email is not spam: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                     
@@ -118,17 +127,46 @@ def main():
                 logging.error(f"FATAL: Error processing email {email_data.get('subject', 'Unknown')}: {e}")
                 raise SystemExit(f"FATAL: Email processing failed: {e}")
         
-        if args.dry_run:
-            logging.info(f"Processing complete. {spam_count} emails classified as spam (not moved).")
+        # PHASE 3: MOVE - Reconnect and batch move spam emails
+        spam_count = len(spam_email_uids)
+        if spam_count > 0:
+            logging.info(f"=== PHASE 3: MOVING {spam_count} SPAM EMAILS ===")
+            
+            if args.dry_run:
+                logging.info("[DRY RUN] Would move the following spam emails:")
+                for spam_email in spam_email_uids:
+                    logging.info(f"  - {spam_email['subject']} (from {spam_email['sender']})")
+                logging.info(f"Processing complete. {spam_count} emails classified as spam (not moved).")
+            else:
+                # Reconnect to IMAP for batch move operation
+                if not email_client.connect():
+                    logging.error("Failed to reconnect to email server for spam move operation")
+                    return 1
+                
+                moved_count = 0
+                for spam_email in spam_email_uids:
+                    try:
+                        if email_client.move_to_spam(spam_email['uid']):
+                            moved_count += 1
+                            logging.info(f"Moved spam email: {spam_email['subject']}")
+                        else:
+                            logging.error(f"Failed to move spam email: {spam_email['subject']}")
+                    except Exception as e:
+                        logging.error(f"Error moving spam email UID {spam_email['uid']}: {e}")
+                
+                logging.info(f"Processing complete. {moved_count}/{spam_count} emails moved to spam folder.")
         else:
-            logging.info(f"Processing complete. {spam_count} emails moved to spam folder.")
+            logging.info("=== PHASE 3: NO SPAM EMAILS TO MOVE ===")
+            logging.info("Processing complete. No spam emails found.")
         
     except Exception as e:
         logging.error(f"Fatal error: {e}")
         return 1
         
     finally:
-        email_client.disconnect()
+        # Only disconnect if we have an active connection
+        if email_client.connection:
+            email_client.disconnect()
     
     return 0
 

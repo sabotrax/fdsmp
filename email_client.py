@@ -32,9 +32,16 @@ class EmailClient:
     
     def disconnect(self):
         if self.connection:
-            self.connection.close()
-            self.connection.logout()
-            logging.info("Disconnected from IMAP server")
+            try:
+                # Only close if we have an active mailbox selected
+                if hasattr(self.connection, 'state') and self.connection.state == 'SELECTED':
+                    self.connection.close()
+                self.connection.logout()
+            except Exception as e:
+                logging.debug(f"Error during IMAP disconnect: {e}")
+            finally:
+                self.connection = None
+                logging.info("Disconnected from IMAP server")
     
     def fetch_latest_emails(self) -> List[Dict]:
         if not self.connection:

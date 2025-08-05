@@ -109,6 +109,7 @@ class SpamClassifier:
         self.base_prompt_tokens = self._estimate_tokens(sample_prompt)
         
         logging.info(f"Loaded and validated {len(self.spam_examples)} examples from {self.examples_file}")
+        logging.info(f"Using LLM model: {self.model_name}")
         logging.info(f"Base prompt size: ~{self.base_prompt_tokens} tokens")
     
     def classify_email(self, email_text: str) -> str:
