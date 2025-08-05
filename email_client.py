@@ -43,22 +43,24 @@ class EmailClient:
         try:
             self.connection.select(self.inbox_folder)
             
-            status, messages = self.connection.search(None, 'ALL')
+            # Use UID SEARCH instead of regular search for persistent IDs
+            status, messages = self.connection.uid('search', None, 'ALL')
             if status != 'OK':
                 raise Exception("Failed to search emails")
             
-            email_ids = messages[0].split()
-            latest_ids = email_ids[-self.max_emails:] if len(email_ids) >= self.max_emails else email_ids
+            email_uids = messages[0].split()
+            latest_uids = email_uids[-self.max_emails:] if len(email_uids) >= self.max_emails else email_uids
             
             emails = []
-            for email_id in latest_ids:
-                status, msg_data = self.connection.fetch(email_id, '(RFC822)')
+            for email_uid in latest_uids:
+                # Use UID FETCH instead of regular fetch
+                status, msg_data = self.connection.uid('fetch', email_uid, '(RFC822)')
                 if status == 'OK':
                     raw_email = msg_data[0][1]
                     email_message = email.message_from_bytes(raw_email)
                     
                     emails.append({
-                        'id': email_id.decode(),
+                        'id': email_uid.decode(),  # Now stores UID instead of sequence number
                         'subject': email_message.get('Subject', ''),
                         'from': email_message.get('From', ''),
                         'to': email_message.get('To', ''),
@@ -72,20 +74,28 @@ class EmailClient:
             logging.error(f"FATAL: Failed to fetch emails from IMAP server: {e}")
             raise SystemExit(f"FATAL: IMAP fetch failed: {e}")
     
-    def move_to_spam(self, email_id: str) -> bool:
+    def move_to_spam(self, email_uid: str) -> bool:
+        """Move email to spam folder using UID (persistent identifier)"""
         if not self.connection:
             raise Exception("Not connected to server")
         
         try:
             self.connection.select(self.inbox_folder)
             
-            self.connection.copy(email_id, self.spam_folder)
-            self.connection.store(email_id, '+FLAGS', '\\Deleted')
+            # Use UID COPY and UID STORE for persistent operations
+            result = self.connection.uid('copy', email_uid, self.spam_folder)
+            if result[0] != 'OK':
+                raise Exception(f"UID COPY failed: {result}")
+            
+            result = self.connection.uid('store', email_uid, '+FLAGS', '\\Deleted')
+            if result[0] != 'OK':
+                raise Exception(f"UID STORE failed: {result}")
+                
             self.connection.expunge()
             
-            logging.info(f"Moved email {email_id} to spam folder")
+            logging.info(f"Moved email UID {email_uid} to spam folder")
             return True
             
         except Exception as e:
-            logging.error(f"FATAL: Failed to move email {email_id} to spam folder: {e}")
+            logging.error(f"FATAL: Failed to move email UID {email_uid} to spam folder: {e}")
             raise SystemExit(f"FATAL: Failed to move spam email: {e}")
