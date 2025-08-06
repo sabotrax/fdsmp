@@ -62,7 +62,6 @@ def main():
         
         # Disconnect IMAP to avoid timeouts during LLM processing
         email_client.disconnect()
-        logging.info("Disconnected from IMAP server for offline processing")
         
         # PHASE 2: CLASSIFY - Offline LLM processing (no IMAP timeouts)
         logging.info("=== PHASE 2: CLASSIFYING EMAILS (OFFLINE) ===")
@@ -119,7 +118,8 @@ def main():
                     })
                     logging.info(f"Marked as spam (will move later): {subject[:50]}{'...' if len(subject) > 50 else ''}")
                 else:
-                    logging.info(f"Email is not spam: {subject[:50]}{'...' if len(subject) > 50 else ''}")
+                    if args.debug:
+                        logging.info(f"Email is not spam: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                     
             except SystemExit:
                 raise  # Re-raise SystemExit to allow proper shutdown

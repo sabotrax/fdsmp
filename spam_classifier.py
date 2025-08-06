@@ -100,7 +100,7 @@ class SpamClassifier:
         self.prompt = FewShotPromptTemplate(
             examples=self.spam_examples,
             example_prompt=self.example_template,
-            prefix="Classify as 'typ 1' or 'typ 2' based on these examples. Answer ONLY 'typ 1' or 'typ 2', no explanations:",
+            prefix="Classify as 'typ 1', 'typ 2', or 'unsure' based on these examples. Pay special attention to examples from the exact same email address. Respond with EXACTLY one word only:",
             suffix="Email:\n{email}\n\nClassification:",
             input_variables=["email"]
         )
@@ -132,24 +132,36 @@ class SpamClassifier:
                 end_time = time.time()
                 processing_time = end_time - start_time
                 logging.info(f"LLM processing time: {processing_time:.2f} seconds")
-                logging.info(f"Received LLM response: '{response[:100]}...'")
+                # Show first and last 50 characters of LLM response
+                if len(response) <= 100:
+                    logging.info(f"Received LLM response: '{response}'")
+                else:
+                    first_50 = response[:50]
+                    last_50 = response[-50:]
+                    logging.info(f"Received LLM response: '{first_50}...{last_50}'")
             
-            classification = response.strip().lower()
+            # Search for classification at end of response using regex
+            import re
+            stripped = response.lower().strip()
+            match = re.search(r'(typ\s+[12]|unsure)$', stripped, re.IGNORECASE)
             
-            # Extract only first line to avoid long explanations
-            first_line = classification.split('\n')[0].strip()
-            
-            # Map typ 2 -> spam, typ 1 -> not spam  
-            if "typ 2" in first_line:
-                result = "spam"
-            elif "typ 1" in first_line:
-                result = "not spam"
+            if match:
+                found = match.group(1)
+                if "typ 2" in found:
+                    result = "spam"
+                    classification_found = found
+                else:  # typ 1 or unsure
+                    result = "not spam"
+                    classification_found = found
             else:
                 # Fallback: assume not spam if unclear
+                if self.debug:
+                    logging.warning(f"LLM gave unclear response, assuming not spam: {response[:100]}...")
                 result = "not spam"
+                classification_found = "fallback"
             
             if self.debug:
-                logging.info(f"Email classified as: {result} (raw: {first_line})")
+                logging.info(f"Email classified as: {result} (raw: {classification_found})")
             else:
                 logging.info(f"Email classified as: {result}")
             return result

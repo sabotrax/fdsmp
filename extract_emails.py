@@ -125,33 +125,18 @@ def extract_emails_to_files(max_emails=None):
                     "classification": "unknown"
                 }
                 
-                # Save to file
+                # Save to file as pure JSON
                 file_path = data_dir / filename
+                
+                # Create JSON object
+                clean_text = email_text.replace('\r\n', '\n').replace('\r', '\n')
+                email_json = {
+                    "email": clean_text,
+                    "classification": "typ_1_or_typ_2"
+                }
+                
                 with open(file_path, 'w', encoding='utf-8') as f:
-                    # Write header with metadata
-                    f.write("=" * 80 + "\n")
-                    f.write(f"EMAIL EXTRACTION - {timestamp}\n")
-                    f.write("=" * 80 + "\n")
-                    f.write(f"Subject: {subject}\n")
-                    f.write(f"From: {sender}\n")
-                    f.write(f"To: {email_data.get('to', '')}\n")
-                    f.write(f"Email ID: {email_id}\n")
-                    f.write(f"Text Length: {len(email_text)} characters\n")
-                    f.write("-" * 80 + "\n")
-                    f.write("EXTRACTED TEXT FOR SPAM CLASSIFICATION:\n")
-                    f.write("-" * 80 + "\n")
-                    f.write(email_text)
-                    f.write("\n" + "-" * 80 + "\n")
-                    f.write("CLASSIFICATION: unknown (manually set to 'typ 1' or 'typ 2')\n")
-                    f.write("-" * 80 + "\n")
-                    f.write("\nTo add to spam.json:\n")
-                    f.write("{\n")
-                    # Remove Windows line endings and clean up text
-                    clean_text = email_text.replace('\r\n', '\n').replace('\r', '\n')
-                    escaped_text = clean_text.replace('"', '\\"').replace('\n', '\\n')
-                    f.write(f'  "email": "{escaped_text}",\n')
-                    f.write('  "classification": "typ_1_or_typ_2"\n')
-                    f.write("}\n")
+                    json.dump(email_json, f, indent=2, ensure_ascii=False)
                 
                 logging.info(f"Saved: {filename}")
                 
@@ -165,7 +150,8 @@ def extract_emails_to_files(max_emails=None):
         logging.info("Manual steps:")
         logging.info("1. Review files in data/ directory")
         logging.info("2. For spam/ham emails, copy the JSON snippet at the end of each file")
-        logging.info("3. Add to spam.json manually (typ 1 = not spam, typ 2 = spam)")
+        spam_examples_file = os.getenv('SPAM_EXAMPLES_FILE', 'spam_examples.json')
+        logging.info(f"3. Add to {spam_examples_file} manually (typ 1 = not spam, typ 2 = spam)")
         
     except Exception as e:
         logging.error(f"Email extraction failed: {e}")

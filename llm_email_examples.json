@@ -1,0 +1,31 @@
+{
+  "examples": [
+{
+  "email": "Subject: smykker Rechnung\nFrom: smykker Saarbrücken <saarbruecken@smykker.de>\nContent: Hallo Marcus Schommer , vielen Dank für deinen Einkauf, anbei findest du deine persönliche Rechnung. Brillen sind einfach mehr als eine reine Sehhilfe"
+,
+  "classification": "typ 1"
+},
+{
+  "email": "Subject: Zahlung für deine Bestellung bei Google Store wird bearbeitet\nFrom: \"Klarna\" <noreply-de@klarna.de>\nContent: Die Zahlung von 19,99 € für deine Bestellung bei Google Store wird innerhalb von 2-3 Werktagen abgebucht. https://clic
+k.klarna.de/f/a/w8draSiWuSMSvR6h",
+  "classification": "typ 1"
+},
+{
+  "email": "Subject: Wichtig: Ihr Coinbase-Konto wird geschlossen\nFrom: Coinbase <info@mail.coinbase.com>\nContent: Wichtig: Ihr Coinbase-Konto wird geschlossen Wir senden Ihnen diese Erinnerung, weil Ihr mit marcus@dankesuper.de verknüpftes Coinbase-
+Konto seit eini",
+  "classification": "typ 1"
+},
+{
+  "email": "Subject: GLM 4.5 : The best Open-Source AI model, beats Kimi-K2, Qwen3 | Mehul Gupta in Data Science in Your Pocket\nFrom: Medium Daily Digest <noreply@medium.com>\nContent: Stories for Marcus Schommer @marcus_88769 (https://medium.com/@marcus_88769?source=email-805946274134-1753922047467-digest.reader---------------------",
+  "classification": "typ 1"
+},
+{
+  "email": "Subject: Beleg für Ihre Zahlung an Patreon\nFrom: PayPal <service@paypal.de>\nContent: Beleg für Ihre Zahlung an Patreon Marcus Schommer, Sie haben eine Zahlung gesendet. Hallo Marcus Schommer! Sie haben 2,38 $ USD an Patreon gezahlt Hän",
+  "classification": "typ 1"
+},
+{
+  "email": "Subject: Beleg für Ihre Zahlung an The New York Times C...\nFrom: PayPal <service@paypal.de>\nContent: Beleg für Ihre Zahlung an The New York Times C... Marcus Schommer, Sie haben eine Zahlung gesendet. Hallo Marcus Schommer! Sie haben 8,00 € EUR an The",
+  "classification": "typ 1"
+},
+  ]
+}

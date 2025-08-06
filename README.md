@@ -13,7 +13,7 @@ Ein Filter-Skript, das IMAP-E-Mails nach Vorgabe mit einem lokalen LLM analysier
 ## Anlass
 
 Mein Mail-Provider patzt bei der Spamerkennung. Je "größer" der Versender, desto weniger funktioniert das manuelle Spam-Training.
-Werbung von Alibaba kommt praktisch immer durch. Dabei hat natürlich nichts mit irgendetwas zu tun.
+Werbung von Aliexpress kommt praktisch immer durch. Dabei hat natürlich nichts mit irgendetwas zu tun.
 Zur Rettung herbei eilt ein Raspberry 5 mit 8 GB RAM und Vibe-Coding.
 
 Die Frage nach dem Sinn sollte man sich bei KI-Inferenz auf einem Raspberry Pi besser nicht stellen.

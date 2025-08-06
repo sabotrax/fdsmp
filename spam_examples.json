@@ -1,24 +1,24 @@
 {
   "examples": [
     {
-      "email": "Subject: URGENT: Claim Your $1000 Prize NOW!\nFrom: winner@prize-claim.com\nContent: Congratulations! You've won $1000! Click here immediately to claim your prize before it expires in 24 hours! No purchase necessary! Act now!",
-      "classification": "spam"
+      "email": "Subject: URGENT: Claim Your $1000 Prize NOW!\nFrom: winner@prize-claim.com\nBody: Congratulations! You've won $1000! Click here immediately to claim your prize before it expires in 24 hours! No purchase necessary! Act now!",
+      "classification": "typ 2"
     },
     {
-      "email": "Subject: Get Rich Quick - Make $5000 a Day Working From Home!\nFrom: easymoney@workfromhome.biz\nContent: Make thousands of dollars daily from home! No experience required! Limited time offer! Send us your bank details to get started today!",
-      "classification": "spam"
+      "email": "Subject: Get Rich Quick - Make $5000 a Day Working From Home!\nFrom: easymoney@workfromhome.biz\nBody: Make thousands of dollars daily from home! No experience required! Limited time offer! Send us your bank details to get started today!",
+      "classification": "typ 2"
     },
     {
-      "email": "Subject: Your Account Has Been Suspended - Verify Now\nFrom: security@bank-verify.net\nContent: Dear customer, your account has been suspended due to suspicious activity. Click this link to verify your identity and avoid permanent suspension. Enter your login credentials immediately.",
-      "classification": "spam"
+      "email": "Subject: Your Account Has Been Suspended - Verify Now\nFrom: security@bank-verify.net\nBody: Dear customer, your account has been suspended due to suspicious activity. Click this link to verify your identity and avoid permanent suspension. Enter your login credentials immediately.",
+      "classification": "typ 2"
     },
     {
-      "email": "Subject: Meeting Tomorrow at 2 PM\nFrom: colleague@company.com\nContent: Hi, just confirming our meeting tomorrow at 2 PM in conference room B. Please bring the quarterly reports we discussed. Thanks!",
-      "classification": "not spam"
+      "email": "Subject: Meeting Tomorrow at 2 PM\nFrom: colleague@company.com\nBody: Hi, just confirming our meeting tomorrow at 2 PM in conference room B. Please bring the quarterly reports we discussed. Thanks!",
+      "classification": "typ 1"
     },
     {
-      "email": "Subject: Monthly Newsletter - Tech Updates\nFrom: newsletter@techcompany.com\nContent: Here are this month's latest updates from our development team. We've released new features and fixed several bugs based on user feedback.",
-      "classification": "not spam"
+      "email": "Subject: Monthly Newsletter - Tech Updates\nFrom: newsletter@techcompany.com\nBody: Here are this month's latest updates from our development team. We've released new features and fixed several bugs based on user feedback.",
+      "classification": "typ 1"
     }
   ]
 }
