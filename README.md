@@ -13,7 +13,7 @@ Ein Filter-Skript, das IMAP-E-Mails nach Vorgabe mit einem lokalen LLM analysier
 ## Anlass
 
 Mein Mail-Provider patzt bei der Spamerkennung. Je "größer" der Versender, desto weniger funktioniert das manuelle Spam-Training.
-Werbung von Aliexpress kommt praktisch immer durch. Dabei hat natürlich nichts mit irgendetwas zu tun.
+Werbung von AliExpress kommt praktisch immer durch. Dabei hat natürlich nichts mit irgendetwas zu tun.
 Zur Rettung herbei eilt ein Raspberry 5 mit 8 GB RAM und Vibe-Coding.
 
 Die Frage nach dem Sinn sollte man sich bei LLM-Inferenz auf einem Raspberry Pi besser nicht stellen.
@@ -32,7 +32,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # oder: pip install uv
 ```
 
-### Ollama installieren und Modell laden
+### Ollama installieren und Modelle laden
 
 ```bash
 # Ollama installieren
@@ -98,7 +98,7 @@ Das System verwendet **typ 1/typ 2** zur Kennzeichnung, um LLM-Spam-Bias zu umge
 ### Beispiel-Mails hinzufügen
 
 Spam und Ham sollten gleich vertreten sein. Je unterschiedlicher, desto besser.
-Die Liste sollte nicht riesig werden, weil Sie bei jeder Mail vom LLM verarbeitet werden muss.
+Die Liste sollte nicht riesig werden, weil sie bei jeder Mail vom LLM verarbeitet werden muss.
 
 **Mails extrahieren:**
 
@@ -133,9 +133,9 @@ Wenn die Liste länger wird oder die Mails darin größer, stößt man schnell a
 Anzeichen dafür sind, dass das LLM falsch sortiert (auch bei hoher Übereinstimmung von Vorlage und Mail).
 
 Abhilfe:
-+ Die nicht-erkannte Mail an die erste Position in der Liste der Beispiel-Mails setzen.
++ Die nicht-erkannte Mail an die erste Position der Beispiel-Mails setzen.
 + Die Liste verkleinern.
-+ Ein anderes/stärkeres/größeres Modell wählen.
++ Ein anderes/stärkeres/größeres LLM wählen.
   Ich habe die besten Erfahrungen mit Qwen3-Modellen gemacht. 
 
 Man muss zwischen Anforderung und Ressourcen wie GPU, CPU und RAM abwägen.
@@ -239,10 +239,9 @@ uv run main.py --debug --debug-prompt --emails 1
 ```
 
 **Emails falsch klassifiziert:**
-- LLM zu klein/schwach → Größeres Modell verwenden
-- Zu wenige Beispiele für das LLM → Mehr in `spam.json` hinzufügen
+- LLM zu klein/schwach → größeres Modell verwenden
 - Temperatur verändern in `.env` (LLM-Wissen erforderlich)
-- LLM_NUM_CTX korrekt? Token könnten überschitten sein durch großes Prompt (LLM-Wissen erforderlich)
+- LLM_NUM_CTX ausreichend? Das Kontext-Fenster könnte durch ein zu großes Prompt überschritten sein (LLM-Wissen erforderlich)
 
 ## Development
 
