@@ -16,8 +16,8 @@ Mein Mail-Provider patzt bei der Spamerkennung. Je "größer" der Versender, des
 Werbung von Aliexpress kommt praktisch immer durch. Dabei hat natürlich nichts mit irgendetwas zu tun.
 Zur Rettung herbei eilt ein Raspberry 5 mit 8 GB RAM und Vibe-Coding.
 
-Die Frage nach dem Sinn sollte man sich bei KI-Inferenz auf einem Raspberry Pi besser nicht stellen.
-Selbst mit dem kleinsten Modell Qwen3:0.6b dauert die Analyse einer Mail ca. eine Minute.
+Die Frage nach dem Sinn sollte man sich bei LLM-Inferenz auf einem Raspberry Pi besser nicht stellen.
+Selbst das kleinste Modell Qwen3:0.6b braucht für die Analyse einer Mail mindestens eine Minute.
 
 ## Installation
 
@@ -79,10 +79,12 @@ OLLAMA_MODEL=qwen3:0.6b
 
 # Spam Classification
 SPAM_EXAMPLES_FILE=spam_examples.json
-LLM_TEMPERATURE=0.7
+LLM_TEMPERATURE=0.2
+LLM_NUM_CTX=8192
 
 # Processing Configuration
 MAX_EMAILS_TO_PROCESS=3
+MAIL_BODY_LENGTH=300
 ```
 
 ## Beispiel-Mails für LLM bereitstellen
@@ -97,7 +99,6 @@ Das System verwendet **typ 1/typ 2** zur Kennzeichnung, um LLM-Spam-Bias zu umge
 
 Spam und Ham sollten gleich vertreten sein. Je unterschiedlicher, desto besser.
 Die Liste sollte nicht riesig werden, weil Sie bei jeder Mail vom LLM verarbeitet werden muss.
-Man sollte zwischen Anforderung und vorhandenen Ressourcen wie Leistungsfähigkeit des Modells, CPU/GPU und RAM abwägen.
 
 **Mails extrahieren:**
 
@@ -125,6 +126,18 @@ Die Einträge müssen nicht geordnet sein.
   ]
 }
 ```
+
+### Hinweise zum Betrieb
+
+Wenn die Liste länger wird oder die Mails darin größer, stößt man schnell an die Grenzen des kleinsten Modells.
+Anzeichen dafür sind, dass das LLM falsch sortiert (auch bei hoher Übereinstimmung von Vorlage und Mail).
+
+Dann kann man:
++ Die nicht-erkannte Mail an die erste Position in der Liste der Beispiel-Mails setzen.
++ Die Liste verkleinern.
++ Ein anderes/stärkeres/größeres Modell wählen.
+
+Man muss zwischen Anforderung und Ressourcen wie GPU, CPU und RAM abwägen.
 
 ### Ausführung
 
