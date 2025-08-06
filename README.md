@@ -132,10 +132,11 @@ Die Einträge müssen nicht geordnet sein.
 Wenn die Liste länger wird oder die Mails darin größer, stößt man schnell an die Grenzen des kleinsten Modells.
 Anzeichen dafür sind, dass das LLM falsch sortiert (auch bei hoher Übereinstimmung von Vorlage und Mail).
 
-Dann kann man:
+Abhilfe:
 + Die nicht-erkannte Mail an die erste Position in der Liste der Beispiel-Mails setzen.
 + Die Liste verkleinern.
 + Ein anderes/stärkeres/größeres Modell wählen.
+  Ich habe die besten Erfahrungen mit Qwen3-Modellen gemacht. 
 
 Man muss zwischen Anforderung und Ressourcen wie GPU, CPU und RAM abwägen.
 
@@ -179,7 +180,7 @@ crontab -e
 
 **Wichtig:** Verwende absolute Pfade für `uv` und das Verzeichnis.
 
-## 🔧 Architektur
+## Architektur
 
 ### 3-Phasen Offline-Processing
 
@@ -206,19 +207,6 @@ Das System behandelt folgende Szenarien graceful:
 - **LLM-Timeouts**: Durch Offline-Processing eliminiert
 
 ## Logging
-
-### Log-Ausgabe verstehen
-
-```
-2025-08-05 05:28:29 - INFO - Using LLM model: qwen3:0.6b
-2025-08-05 05:28:29 - INFO - Base prompt size: ~870 tokens
-2025-08-05 05:28:29 - INFO - === PHASE 1: FETCHING EMAILS ===
-2025-08-05 05:28:30 - INFO - Fetched 3 emails
-2025-08-05 05:28:30 - INFO - === PHASE 2: CLASSIFYING EMAILS (OFFLINE) ===
-2025-08-05 05:29:31 - INFO - Email classified as: not spam (raw: typ 1)
-2025-08-05 05:30:14 - INFO - === PHASE 3: MOVING 2 SPAM EMAILS ===
-2025-08-05 05:30:15 - INFO - Processing complete. 2/2 spam emails moved successfully.
-```
 
 ### Log-Dateien
 
@@ -256,7 +244,7 @@ uv run main.py --debug --debug-prompt --emails 1
 - Temperatur verändern in `.env` (LLM-Wissen erforderlich)
 - LLM_NUM_CTX korrekt? Token könnten überschitten sein durch großes Prompt (LLM-Wissen erforderlich)
 
-## 🔗 Development
+## Development
 
 ### Debug-Scripts
 
