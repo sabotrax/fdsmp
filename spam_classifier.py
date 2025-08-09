@@ -113,12 +113,12 @@ class SpamClassifier:
         logging.info(f"Using LLM model: {self.model_name}")
         logging.info(f"Base prompt size: ~{self.base_prompt_tokens} tokens")
     
-    def classify_email(self, email_text: str) -> str:
+    def classify_email(self, email_text: str) -> tuple[str, float]:
         try:
+            start_time = time.time()
             if self.debug:
                 logging.info("Starting email classification...")
                 logging.info(f"Email text length: {len(email_text)} characters")
-                start_time = time.time()
                 
             if self.debug_prompt:
                 formatted_prompt = self.prompt.format(email=email_text)
@@ -129,9 +129,6 @@ class SpamClassifier:
             response = self.llm.invoke(self.prompt.format(email=email_text))
             
             if self.debug:
-                end_time = time.time()
-                processing_time = end_time - start_time
-                logging.info(f"LLM processing time: {processing_time:.2f} seconds")
                 # Show first and last 50 characters of LLM response
                 if len(response) <= 100:
                     logging.info(f"Received LLM response: '{response}'")
@@ -160,11 +157,14 @@ class SpamClassifier:
                 result = "not spam"
                 classification_found = "fallback"
             
+            end_time = time.time()
+            processing_time = end_time - start_time
+            
             if self.debug:
                 logging.info(f"Email classified as: {result} (raw: {classification_found})")
             else:
                 logging.info(f"Email classified as: {result}")
-            return result
+            return result, processing_time
             
         except Exception as e:
             logging.error(f"FATAL: Failed to classify email with LLM: {e}")

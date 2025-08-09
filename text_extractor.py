@@ -20,6 +20,7 @@ class TextExtractor:
             '\uFEFF',  # Zero Width No-Break Space
             '\u2060',  # Word Joiner
             '\u180E',  # Mongolian Vowel Separator
+            '\u00AD',  # Soft Hyphen
         ]
         
         cleaned_text = text

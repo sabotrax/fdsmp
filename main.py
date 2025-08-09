@@ -67,6 +67,7 @@ def main():
         logging.info("=== PHASE 2: CLASSIFYING EMAILS (OFFLINE) ===")
         spam_email_uids = []
         processed_count = 0
+        total_llm_time = 0.0
         
         for email_data in emails:
             try:
@@ -102,12 +103,16 @@ def main():
                 
                 processed_count += 1
                 logging.info(f"Processing email {processed_count}/{len(emails)}:")
-                logging.info(f"  From: {sender}")
-                logging.info(f"  Subject: {subject[:50]}{'...' if len(subject) > 50 else ''}")
+                logging.info(f"👨 From: {sender}")
+                logging.info(f"📧 Subject: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                 
                 email_text = text_extractor.prepare_email_for_analysis(email_data)
                 
-                classification = spam_classifier.classify_email(email_text)
+                classification, llm_time = spam_classifier.classify_email(email_text)
+                total_llm_time += llm_time
+                
+                if args.debug:
+                    logging.info(f"⏱️  LLM processing time: {llm_time:.2f}s")
                 
                 if classification == "spam":
                     # Collect spam email UID for later batch move operation
@@ -116,10 +121,10 @@ def main():
                         'subject': subject[:50] + ('...' if len(subject) > 50 else ''),
                         'sender': sender
                     })
-                    logging.info(f"Marked as spam (will move later): {subject[:50]}{'...' if len(subject) > 50 else ''}")
+                    logging.info(f"❌ Spam detected: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                 else:
                     if args.debug:
-                        logging.info(f"Email is not spam: {subject[:50]}{'...' if len(subject) > 50 else ''}")
+                        logging.info(f"✅ Not spam: {subject[:50]}{'...' if len(subject) > 50 else ''}")
                     
             except SystemExit:
                 raise  # Re-raise SystemExit to allow proper shutdown
@@ -173,6 +178,9 @@ def main():
         else:
             logging.info("=== PHASE 3: NO SPAM EMAILS TO MOVE ===")
             logging.info("Processing complete. No spam emails found.")
+        
+        # Show total LLM processing time
+        logging.info(f"⏱️  Total LLM processing time: {total_llm_time:.2f}s")
         
     except Exception as e:
         logging.error(f"Fatal error: {e}")

@@ -136,7 +136,7 @@ Abhilfe:
 + Die nicht-erkannte Mail an die erste Position der Beispiel-Mails setzen.
 + Die Liste verkleinern.
 + Ein anderes/stärkeres/größeres LLM wählen.
-  Ich habe die besten Erfahrungen mit Qwen3-Modellen gemacht. 
+  Ich habe die besten Erfahrungen mit Qwen3 gemacht. 
 
 Man muss zwischen Anforderung und Ressourcen wie GPU, CPU und RAM abwägen.
 
