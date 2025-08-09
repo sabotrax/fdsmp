@@ -163,7 +163,10 @@ class SpamClassifier:
             if self.debug:
                 logging.info(f"Email classified as: {result} (raw: {classification_found})")
             else:
-                logging.info(f"Email classified as: {result}")
+                if result == "spam":
+                    logging.info(f"❌ Email classified as: {result}")
+                else:
+                    logging.info(f"✅ Email classified as: {result}")
             return result, processing_time
             
         except Exception as e:
