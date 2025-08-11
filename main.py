@@ -1,11 +1,55 @@
 #!/usr/bin/env python3
 
 import argparse
+import atexit
 import logging
+import os
+import signal
 import sys
 from email_client import EmailClient
 from text_extractor import TextExtractor
 from spam_classifier import SpamClassifier
+
+PID_FILE = "fdsmp.pid"
+
+def cleanup_pid_file():
+    """Remove PID file on exit"""
+    try:
+        if os.path.exists(PID_FILE):
+            os.remove(PID_FILE)
+    except OSError:
+        pass
+
+def signal_handler(signum, frame):
+    """Handle termination signals"""
+    logging.info(f"Received signal {signum}, shutting down...")
+    cleanup_pid_file()
+    sys.exit(0)
+
+def check_single_instance():
+    """Ensure only one instance of fdsmp runs at a time"""
+    if os.path.exists(PID_FILE):
+        with open(PID_FILE, 'r') as f:
+            old_pid = int(f.read().strip())
+        
+        try:
+            os.kill(old_pid, 0)
+            logging.error(f"fdsmp already running (PID {old_pid})")
+            return False
+        except OSError:
+            # Process doesn't exist anymore, remove stale PID file
+            os.remove(PID_FILE)
+    
+    # Write our PID
+    with open(PID_FILE, 'w') as f:
+        f.write(str(os.getpid()))
+    
+    # Register cleanup handlers
+    atexit.register(cleanup_pid_file)
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    return True
 
 def setup_logging():
     logging.basicConfig(
@@ -39,6 +83,11 @@ def main():
         os.environ['MAX_EMAILS_TO_PROCESS'] = str(args.emails)
     
     setup_logging()
+    
+    # Check for single instance before doing anything else
+    if not check_single_instance():
+        return 1
+    
     if args.dry_run:
         logging.info("Starting fdsmp - spam filter (DRY RUN MODE)")
     else:
