@@ -2,6 +2,8 @@
 
 Ein Filter-Skript, das IMAP-E-Mails nach Vorgabe mit einem lokalen LLM analysiert und verschiebt.
 
+![fdsmp output](./images/fdsmp_output.jpg)
+
 ## Features
 
 - **3-Phasen Offline-Architektur**: FETCH → CLASSIFY → MOVE (verhindert IMAP-Timeouts)
