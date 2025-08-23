@@ -49,6 +49,9 @@ venv.bak/
 *.log
 fdsmp.log
 
+# PID
+fdsmp.pid
+
 # OS
 .DS_Store
 .DS_Store?

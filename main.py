@@ -12,6 +12,7 @@ from spam_classifier import SpamClassifier
 
 PID_FILE = "fdsmp.pid"
 
+
 def cleanup_pid_file():
     """Remove PID file on exit"""
     try:
@@ -20,18 +21,20 @@ def cleanup_pid_file():
     except OSError:
         pass
 
+
 def signal_handler(signum, frame):
     """Handle termination signals"""
     logging.info(f"Received signal {signum}, shutting down...")
     cleanup_pid_file()
     sys.exit(0)
 
+
 def check_single_instance():
     """Ensure only one instance of fdsmp runs at a time"""
     if os.path.exists(PID_FILE):
-        with open(PID_FILE, 'r') as f:
+        with open(PID_FILE, "r") as f:
             old_pid = int(f.read().strip())
-        
+
         try:
             os.kill(old_pid, 0)
             logging.error(f"fdsmp already running (PID {old_pid})")
@@ -39,171 +42,207 @@ def check_single_instance():
         except OSError:
             # Process doesn't exist anymore, remove stale PID file
             os.remove(PID_FILE)
-    
+
     # Write our PID
-    with open(PID_FILE, 'w') as f:
+    with open(PID_FILE, "w") as f:
         f.write(str(os.getpid()))
-    
+
     # Register cleanup handlers
     atexit.register(cleanup_pid_file)
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
-    
+
     return True
+
 
 def setup_logging():
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler('fdsmp.log'),
-            logging.StreamHandler(sys.stdout)
-        ]
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[logging.FileHandler("fdsmp.log"), logging.StreamHandler(sys.stdout)],
     )
 
+
 def main():
-    parser = argparse.ArgumentParser(description='fdsmp - automated spam filter')
-    parser.add_argument('--dry-run', action='store_true', 
-                       help='Classify emails but do not move them to spam folder')
-    parser.add_argument('--debug', action='store_true',
-                       help='Enable debug logging for LLM classification')
-    parser.add_argument('--debug-prompt', action='store_true',
-                       help='Show full prompt sent to LLM (implies --debug)')
-    parser.add_argument('--emails', type=int, metavar='N',
-                       help='Number of emails to process (overrides .env MAX_EMAILS_TO_PROCESS)')
+    parser = argparse.ArgumentParser(description="fdsmp - automated spam filter")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Classify emails but do not move them to spam folder",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Enable debug logging for LLM classification",
+    )
+    parser.add_argument(
+        "--debug-prompt",
+        action="store_true",
+        help="Show full prompt sent to LLM (implies --debug)",
+    )
+    parser.add_argument(
+        "--emails",
+        type=int,
+        metavar="N",
+        help="Number of emails to process (overrides .env MAX_EMAILS_TO_PROCESS)",
+    )
     args = parser.parse_args()
-    
+
     # --debug-prompt implies --debug
     if args.debug_prompt:
         args.debug = True
-    
+
     # Override MAX_EMAILS_TO_PROCESS if --emails is specified
     if args.emails:
         import os
-        os.environ['MAX_EMAILS_TO_PROCESS'] = str(args.emails)
-    
+
+        os.environ["MAX_EMAILS_TO_PROCESS"] = str(args.emails)
+
     setup_logging()
-    
+
     # Check for single instance before doing anything else
     if not check_single_instance():
         return 1
-    
+
     if args.dry_run:
         logging.info("Starting fdsmp - spam filter (DRY RUN MODE)")
     else:
         logging.info("Starting fdsmp - spam filter")
-    
-    email_client = EmailClient()
+
+    email_client = EmailClient(debug=args.debug)
     text_extractor = TextExtractor()
     spam_classifier = SpamClassifier(debug=args.debug, debug_prompt=args.debug_prompt)
-    
+
     try:
         if not email_client.connect():
             logging.error("Failed to connect to email server")
             return 1
-        
+
         # PHASE 1: FETCH - Get emails and disconnect IMAP
         logging.info("=== PHASE 1: FETCHING EMAILS ===")
         emails = email_client.fetch_latest_emails()
         if not emails:
             logging.info("No emails to process")
             return 0
-        
+
         # Disconnect IMAP to avoid timeouts during LLM processing
         email_client.disconnect()
-        
+
         # PHASE 2: CLASSIFY - Offline LLM processing (no IMAP timeouts)
         logging.info("=== PHASE 2: CLASSIFYING EMAILS (OFFLINE) ===")
         spam_email_uids = []
         processed_count = 0
         total_llm_time = 0.0
-        
+
         for email_data in emails:
             try:
                 from email.header import decode_header
-                
+
                 # Decode subject for display
-                subject = email_data['subject']
+                subject = email_data["subject"]
                 try:
                     decoded_parts = decode_header(subject)
                     decoded_subject = ""
                     for part, encoding in decoded_parts:
                         if isinstance(part, bytes):
-                            decoded_subject += part.decode(encoding or 'utf-8', errors='ignore')
+                            decoded_subject += part.decode(
+                                encoding or "utf-8", errors="ignore"
+                            )
                         else:
                             decoded_subject += part
                     subject = decoded_subject.strip()
-                except:
+                except Exception:
                     pass
-                
-                # Decode sender for display  
-                sender = email_data['from']
+
+                # Decode sender for display
+                sender = email_data["from"]
                 try:
                     decoded_parts = decode_header(sender)
                     decoded_sender = ""
                     for part, encoding in decoded_parts:
                         if isinstance(part, bytes):
-                            decoded_sender += part.decode(encoding or 'utf-8', errors='ignore')
+                            decoded_sender += part.decode(
+                                encoding or "utf-8", errors="ignore"
+                            )
                         else:
                             decoded_sender += part
                     sender = decoded_sender.strip()
-                except:
+                except Exception:
                     pass
-                
+
                 processed_count += 1
                 logging.info(f"Processing email {processed_count}/{len(emails)}:")
                 logging.info(f"👨 From: {sender}")
-                logging.info(f"📧 Subject: {subject[:50]}{'...' if len(subject) > 50 else ''}")
-                
+                logging.info(
+                    f"📧 Subject: {subject[:50]}{'...' if len(subject) > 50 else ''}"
+                )
+
                 email_text = text_extractor.prepare_email_for_analysis(email_data)
-                
+
                 classification, llm_time = spam_classifier.classify_email(email_text)
                 total_llm_time += llm_time
-                
+
                 if args.debug:
                     logging.info(f"⏱️  LLM processing time: {llm_time:.2f}s")
-                
+
                 if classification == "spam":
                     # Collect spam email UID for later batch move operation
-                    spam_email_uids.append({
-                        'uid': email_data['id'],
-                        'subject': subject[:50] + ('...' if len(subject) > 50 else ''),
-                        'sender': sender
-                    })
-                    logging.info(f"❌ Spam detected: {subject[:50]}{'...' if len(subject) > 50 else ''}")
+                    spam_email_uids.append(
+                        {
+                            "uid": email_data["id"],
+                            "subject": subject[:50]
+                            + ("..." if len(subject) > 50 else ""),
+                            "sender": sender,
+                        }
+                    )
+                    logging.info(
+                        f"❌ Spam detected: {subject[:50]}{'...' if len(subject) > 50 else ''}"
+                    )
                 else:
                     if args.debug:
-                        logging.info(f"✅ Not spam: {subject[:50]}{'...' if len(subject) > 50 else ''}")
-                    
+                        logging.info(
+                            f"✅ Not spam: {subject[:50]}{'...' if len(subject) > 50 else ''}"
+                        )
+
             except SystemExit:
                 raise  # Re-raise SystemExit to allow proper shutdown
             except Exception as e:
-                logging.error(f"FATAL: Error processing email {email_data.get('subject', 'Unknown')}: {e}")
+                logging.error(
+                    f"FATAL: Error processing email {email_data.get('subject', 'Unknown')}: {e}"
+                )
                 raise SystemExit(f"FATAL: Email processing failed: {e}")
-        
+
         # PHASE 3: MOVE - Reconnect and batch move spam emails
         spam_count = len(spam_email_uids)
         if spam_count > 0:
             logging.info(f"=== PHASE 3: MOVING {spam_count} SPAM EMAILS ===")
-            
+
             if args.dry_run:
                 logging.info("[DRY RUN] Would move the following spam emails:")
                 for spam_email in spam_email_uids:
-                    logging.info(f"  - {spam_email['subject']} (from {spam_email['sender']})")
-                logging.info(f"Processing complete. {spam_count} emails classified as spam (not moved).")
+                    logging.info(
+                        f"  - {spam_email['subject']} (from {spam_email['sender']})"
+                    )
+                logging.info(
+                    f"Processing complete. {spam_count} emails classified as spam (not moved)."
+                )
             else:
                 # Reconnect to IMAP for batch move operation
                 if not email_client.connect():
-                    logging.error("Failed to reconnect to email server for spam move operation")
+                    logging.error(
+                        "Failed to reconnect to email server for spam move operation"
+                    )
                     return 1
-                
+
                 moved_count = 0
                 failed_count = 0
                 disappeared_count = 0
-                
+
                 for spam_email in spam_email_uids:
-                    success, error_message = email_client.move_to_spam(spam_email['uid'])
-                    
+                    success, error_message = email_client.move_to_spam(
+                        spam_email["uid"]
+                    )
+
                     if success:
                         moved_count += 1
                         logging.info(f"Moved spam email: {spam_email['subject']}")
@@ -211,36 +250,49 @@ def main():
                         failed_count += 1
                         if "not found" in error_message.lower():
                             disappeared_count += 1
-                            logging.warning(f"Email disappeared (user moved/deleted?): {spam_email['subject']} - {error_message}")
+                            logging.warning(
+                                f"Email disappeared (user moved/deleted?): {spam_email['subject']} - {error_message}"
+                            )
                         else:
-                            logging.error(f"Failed to move spam email: {spam_email['subject']} - {error_message}")
-                
+                            logging.error(
+                                f"Failed to move spam email: {spam_email['subject']} - {error_message}"
+                            )
+
                 # Detailed completion summary
                 if failed_count == 0:
-                    logging.info(f"Processing complete. All {moved_count}/{spam_count} spam emails moved successfully.")
+                    logging.info(
+                        f"Processing complete. All {moved_count}/{spam_count} spam emails moved successfully."
+                    )
                 else:
-                    logging.info(f"Processing complete. {moved_count}/{spam_count} emails moved to spam folder.")
+                    logging.info(
+                        f"Processing complete. {moved_count}/{spam_count} emails moved to spam folder."
+                    )
                     if disappeared_count > 0:
-                        logging.info(f"  {disappeared_count} emails disappeared (likely moved/deleted by user)")  
+                        logging.info(
+                            f"  {disappeared_count} emails disappeared (likely moved/deleted by user)"
+                        )
                     if failed_count - disappeared_count > 0:
-                        logging.warning(f"  {failed_count - disappeared_count} emails failed to move due to other errors")
+                        logging.warning(
+                            f"  {failed_count - disappeared_count} emails failed to move due to other errors"
+                        )
         else:
             logging.info("=== PHASE 3: NO SPAM EMAILS TO MOVE ===")
             logging.info("Processing complete. No spam emails found.")
-        
+
         # Show total LLM processing time
         logging.info(f"⏱️  Total LLM processing time: {total_llm_time:.2f}s")
-        
+
     except Exception as e:
         logging.error(f"Fatal error: {e}")
         return 1
-        
+
     finally:
         # Only disconnect if we have an active connection
         if email_client.connection:
             email_client.disconnect()
-    
+
     return 0
+
 
 if __name__ == "__main__":
     exit_code = main()

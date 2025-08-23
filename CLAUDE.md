@@ -14,6 +14,7 @@ fdsmp is an automated spam filter that analyzes IMAP emails using a local LLM (O
 - Use `uv add <package>` to add dependencies
 - Use `uv run <script>` to run Python scripts
 - Use `uv sync` to sync dependencies
+- Use `ruff` for linting and code formatting
 
 ## Common Commands
 
@@ -50,6 +51,10 @@ uv run extract_emails.py --emails 10
 # Debug utilities
 uv run debug_scripts/test_imap_folders.py     # Test IMAP connection and folders
 uv run debug_scripts/test_email_fetch.py     # Test email fetching
+
+# Code quality
+uv run ruff check .                           # Run linter
+uv run ruff format .                          # Format code
 ```
 
 ### Production
