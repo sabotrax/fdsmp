@@ -100,12 +100,12 @@ Das System verwendet **typ 1/typ 2** zur Kennzeichnung, um LLM-Spam-Bias zu umge
 
 ### Beispiel-Mails hinzufügen
 
-Spam und Ham sollten ca. gleich vertreten sein. Je unterschiedlicher, desto besser.
-Die Liste sollte nicht riesig werden, weil sie bei der Analyse jeder E-Mail vom LLM verarbeitet werden muss.
-Die Länge des Prompts (Systemprompt + Beispiele + E-Mail) beeinflusst die Verarbeitungsgeschwindigkeit
-maßgeblich. Weiterhin kann ein zu großes Prompt das Kontext-Fenster (Kurzzeitgedächtnis) des LLMs überschreiten.
++ Spam und Ham sollten ca. gleich vertreten sein. Je unterschiedlicher, desto besser.
++ Die Liste sollte nicht riesig werden, weil sie bei der Analyse jeder E-Mail vom LLM verarbeitet werden muss.
++ Die Länge des Prompts (Systemprompt + Beispiele + E-Mail) beeinflusst die Verarbeitungsgeschwindigkeit maßgeblich.
++ Ein zu großes Prompt kann das Kontext-Fenster (Kurzzeitgedächtnis) des LLMs überschreiten.
 
-**Mails extrahieren:**
+**E-Mails extrahieren:**
 
 Das Skript zieht die neuesten 10 E-Mails und legt sie in `data/` ab.
 
