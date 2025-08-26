@@ -22,8 +22,8 @@ Die Frage nach dem Sinn sollte man sich bei LLM-Inferenz auf einem Raspberry Pi 
 Selbst das kleinste Modell Qwen3:0.6b braucht für die Analyse einer Mail mindestens eine Minute.
 
 Die Frage nach dem Sinn von LLM-Inferenz auf einem Raspberry Pi ist natürlich erlaubt,
-denn schnell läuft das Skript sicher nicht.  
-Aktuelle verwende ich (Qwen3-4B-Instruct-2507-GGUF:Q4_K_M)[https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF], was ca. 4,6 GB RAM belegt
+denn schnell läuft das Skript sicher nicht.
+Aktuelle verwende ich [Qwen3-4B-Instruct-2507-GGUF:Q4_K_M](https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF), welches ca. 4,6 GB RAM belegt
 und für die Analyse einer Mail etwas länger als eine Minute braucht.
 
 ### Python und Paketmanager
