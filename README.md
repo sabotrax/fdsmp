@@ -21,7 +21,10 @@ Zur Rettung herbei eilt ein Raspberry 5 mit 8 GB RAM und Vibe-Coding.
 Die Frage nach dem Sinn sollte man sich bei LLM-Inferenz auf einem Raspberry Pi besser nicht stellen.
 Selbst das kleinste Modell Qwen3:0.6b braucht für die Analyse einer Mail mindestens eine Minute.
 
-## Installation
+Die Frage nach dem Sinn von LLM-Inferenz auf einem Raspberry Pi ist natürlich erlaubt,
+denn schnell läuft das Skript sicher nicht.  
+Aktuelle verwende ich (Qwen3-4B-Instruct-2507-GGUF:Q4_K_M)[https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF], was ca. 4,6 GB RAM belegt
+und für die Analyse einer Mail etwas länger als eine Minute braucht.
 
 ### Python und Paketmanager
 
@@ -137,7 +140,7 @@ Anzeichen dafür sind, dass das LLM falsch sortiert (auch bei hoher Übereinstim
 Abhilfe:
 + Die nicht-erkannte Mail an die erste Position der Beispiel-Mails setzen.
 + Die Liste verkleinern.
-+ Ein anderes/stärkeres/größeres LLM wählen.
++ Ein anderes/größeres LLM wählen.
   Ich habe die besten Erfahrungen mit Qwen3 gemacht. 
 
 Man muss zwischen Anforderung und Ressourcen wie GPU, CPU und RAM abwägen.
@@ -241,9 +244,9 @@ uv run main.py --debug --debug-prompt --emails 1
 ```
 
 **Emails falsch klassifiziert:**
-- LLM zu klein/schwach → größeres Modell verwenden
+- LLM zu klein → größeres Modell verwenden
 - Temperatur verändern in `.env` (LLM-Wissen erforderlich)
-- LLM_NUM_CTX ausreichend? Das Kontext-Fenster könnte durch ein zu großes Prompt überschritten sein (LLM-Wissen erforderlich)
+- LLM_NUM_CTX ausreichend? Das modell-spezifische Kontext-Fenster könnte durch ein zu großes Prompt (Prompt + Beispiele + E-Mail) überschritten sein (LLM-Wissen erforderlich)
 
 ## Development
 
@@ -274,4 +277,4 @@ fdsmp/
 
 ## License
 
-MIT License - Nutze es wie du willst, aber Spam nervt trotzdem.
+MIT License
